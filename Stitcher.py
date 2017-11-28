@@ -2,6 +2,7 @@
 import cv2
 from scipy.stats import mode
 import time
+import ImageFusion
 
 class Stitcher:
     '''
@@ -20,19 +21,23 @@ class Stitcher:
     def stitchTwoRows(self, upColumnAddress, downColumnAddress, numPixelControl):
         pass
 
-    def fuseImage(self, images, result, dx, dy, direction="horizontal", fuseMethod = "linerBlending"):
+    def fuseImage(self, images, direction="horizontal", fuseMethod = "linearBlending"):
         (imageA, imageB) = images
+        fuseRegion = np.zeros(imageA.shape, np.uint8)
+        cv2.namedWindow("imageA", 0)
+        cv2.namedWindow("imageB", 0)
+        cv2.imshow("imageA", imageA)  # 测试使用
+        cv2.imshow("imageB", imageB)  # 测试使用
+        cv2.waitKey(0)
         if fuseMethod == "average":
-            returnImage = int((imageA + imageB)/2)
+            fuseRegion = ImageFusion.fuseByAverage(images)
         elif fuseMethod == "maximum":
-            pass
+            fuseRegion = ImageFusion.fuseByMaximum(images)
         elif fuseMethod == "minimum":
-            pass
-        elif fuseMethod == "linerBlending":
-            if direction == "horizontal":
-                pass
-            elif direction == "vertical":
-                pass
+            fuseRegion = ImageFusion.fuseByMinimum(images)
+        elif fuseMethod == "linearBlending":
+            fuseRegion = ImageFusion.fuseByLinearBlending(images,direction)
+        return fuseRegion
 
     def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
         '''
@@ -99,7 +104,7 @@ class Stitcher:
                 if searchLengthForLarge == -1:
                     roiRegion = image[:, col - searchLength:col]
                 elif searchLengthForLarge > 0:
-                    roiRegion = image[row - searchLengthForLarge:end, col - searchLength:col]
+                    roiRegion = image[row - searchLengthForLarge:row, col - searchLength:col]
             elif order == "second":
                 if searchLengthForLarge == -1:
                     roiRegion = image[:, 0: searchLength]
@@ -152,7 +157,7 @@ class Stitcher:
                 dy.append(ptA[1] - ptB[1])
         return int(mode(np.array(dx), axis=None)[0]), int(mode(np.array(dy), axis=None)[0])
 
-    def getStitchByOffset(self, images, dx, dy, direction="horizontal", fuseMethod="LinerBlending"):
+    def getStitchByOffset(self, images, dx, dy, direction="horizontal", fuseMethod="LinearBlending"):
         (imageA, imageB) = images
         (hA, wA) = imageA.shape[:2]
         (hB, wB) = imageB.shape[:2]
@@ -160,24 +165,37 @@ class Stitcher:
             if dx < 0:
                 cutImageA = self.creatOffsetImage(imageA, direction, dx)
                 stitchImage = np.hstack((cutImageA[0:hA+dx, 0:wA-dy], imageB[0:hA+dx, :]))
+                if fuseMethod != "notFuse":
+                    fuseRegion = self.fuseImage([cutImageA[0:hA+dx, wA-dy:wA], imageB[0:hA+dx, 0:dy]], direction="horizontal",
+                                                 fuseMethod=fuseMethod)
+                    stitchImage[:, wA - dy:wA] = fuseRegion[:]
             elif dx > 0:
                 cutImageA = self.creatOffsetImage(imageA, direction, dx)
                 stitchImage = np.hstack((cutImageA[0:hA-dx, 0:wA-dy], imageB[0:hA-dx, :]))
                 # 判断是否对图像进行融合
                 if fuseMethod != "notFuse":
-                    stitchImage = self.fuseImage([cutImageA, imageB[]], stitchImage, dx, dy, direction="horizontal",
-                                                 fuseMethod="linerBlending")
+                    fuseRegion = self.fuseImage([cutImageA[0:hA-dx,wA-dy:wA], imageB[0:hA-dx,0:dy]], direction="horizontal",
+                                                 fuseMethod=fuseMethod)
+                    stitchImage[:, wA-dy:wA] = fuseRegion[:]
         elif direction == "vertical":
             if dy < 0:
                 cutImageA = self.creatOffsetImage(imageA, direction, dy)
                 stitchImage = np.vstack((cutImageA[0:hA-dx, (-dy):wA], imageB[:, 0:wB+dy]))
+                if fuseMethod != "notFuse":
+                    fuseRegion = self.fuseImage([cutImageA[hA-dx:hA, (-dy):wA], imageB[0:dx, 0:wB+dy]], direction="horizontal",
+                                                 fuseMethod=fuseMethod)
+                    stitchImage[hA-dx:hA, :] = fuseRegion[:]
             elif dy > 0:
                 cutImageA = self.creatOffsetImage(imageA, direction, dy)
                 stitchImage = np.vstack((cutImageA[0:hA-dx, dy:wA], imageB[:, 0:wB-dy]))
+                if fuseMethod != "notFuse":
+                    fuseRegion = self.fuseImage([cutImageA[hA-dx:hA, dy:wA], imageB[0:dx, 0:wB-dy]], direction="horizontal",
+                                                 fuseMethod=fuseMethod)
+                    stitchImage[hA - dx:hA, :] = fuseRegion[:]
         return stitchImage
 
     # 拼接函数，根据位移拼接
-    def stitchByOffset(self, images, ratio=0.75, reprojThresh=4.0, featureMethod="sift", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="LinerBlending"):
+    def stitchByOffset(self, images, ratio=0.75, reprojThresh=4.0, featureMethod="sift", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="LinearBlending"):
         # 获取输入图片及其搜索区域
         (imageA, imageB) = images
         roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=searchLength, searchLengthForLarge=searchLengthForLarge)
@@ -197,12 +215,6 @@ class Stitcher:
         # 根据偏移量创建拼接好的整体图像
         resultStitched = self.getStitchByOffset(images, dx, dy, direction=direction, fuseMethod = fuseMethod)
 
-        # # 根据两张图像融合处最终结果
-        # if fuseMethod != "notFuse":
-        #     if direction=="horizontal":
-        #         fuseResult = self.fuseImage(imageA[, ],imageB[, ])
-        #     elif direction=="vertical":
-        #         pass
         return resultStitched
 
     # # 拼接函数，根据投影变换拼接
@@ -315,9 +327,11 @@ if __name__=="__main__":
     # imageB = cv2.cvtColor(cv2.imread("images/dendriticCrystal/iron/1-002.jpg"), cv2.COLOR_RGB2GRAY)
     startTime = time.time()
     stitcher = Stitcher()
-    result = stitcher.stitchByOffset([imageA, imageB], ratio=0.75, reprojThresh=4.0, featureMethod="surf", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="LinerBlending")
+    result = stitcher.stitchByOffset([imageA, imageB], ratio=0.75, reprojThresh=4.0, featureMethod="surf", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="average")
     endTime = time.time()
     print(endTime-startTime)
+    print(result.shape)
+    cv2.namedWindow("Result", 0)
     cv2.imshow("Result", result)
     cv2.imwrite("111.jpg", result)
     cv2.waitKey(0)

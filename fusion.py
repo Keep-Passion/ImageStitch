@@ -183,8 +183,8 @@ def img_fusionLP(ROI1, ROI2):
     images = []
     images.append(ROI1)
     images.append(ROI2)
-    for y in xrange(0, images[0].shape[0]):
-        for x in xrange(0, images[0].shape[1]):
+    for y in range(0, images[0].shape[0]):
+        for x in range(0, images[0].shape[1]):
             if images[0][y, x]==0:
                 images[0][y, x] = images[1][y, x]
 
