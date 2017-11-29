@@ -24,11 +24,11 @@ class Stitcher:
     def fuseImage(self, images, direction="horizontal", fuseMethod = "linearBlending"):
         (imageA, imageB) = images
         fuseRegion = np.zeros(imageA.shape, np.uint8)
-        cv2.namedWindow("imageA", 0)
-        cv2.namedWindow("imageB", 0)
-        cv2.imshow("imageA", imageA)  # 测试使用
-        cv2.imshow("imageB", imageB)  # 测试使用
-        cv2.waitKey(0)
+        # cv2.namedWindow("imageA", 0)
+        # cv2.namedWindow("imageB", 0)
+        # cv2.imshow("imageA", imageA)  # 测试使用
+        # cv2.imshow("imageB", imageB)  # 测试使用
+        # cv2.waitKey(0)
         if fuseMethod == "average":
             fuseRegion = ImageFusion.fuseByAverage(images)
         elif fuseMethod == "maximum":
@@ -94,7 +94,6 @@ class Stitcher:
         :param m_searchLength:搜索区域大小
         :param m_searchLengthForLarge:对于行拼接和列拼接的搜索区域大小
         :return:返回感兴趣区域图像
-
         :type m_searchLength: np.int
         '''
         # roiRegion = originalImage.copy()
