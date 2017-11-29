@@ -33,4 +33,5 @@ def fuseByMinimum(images):
     return fuseRegion
 
 def fuseByLinearBlending(images, direction="horizontal"):
+    (imageA, imageB) = images
     pass
