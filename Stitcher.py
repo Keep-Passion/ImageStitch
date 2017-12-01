@@ -208,7 +208,11 @@ class Stitcher:
 
         # 匹配两张图片的所有特征点，返回匹配结果
         matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, ratio)
-
+        ptsA = np.float32([kpsA[i] for (_, i) in matches])
+        ptsB = np.float32([kpsB[i] for (i, _) in matches])
+        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, reprojThresh)
+        print(H)
+        print(status)
         # 根据匹配的特征点计算偏移量
         dx, dy = self.getOffsetByMode([roiImageA, roiImageB], matches, kpsA, kpsB, featuresA, featuresB, direction=direction)
         print(" The offset of stitching: dx is " + str(dx) + " and dy is " + str(dy))
