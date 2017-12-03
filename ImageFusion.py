@@ -52,13 +52,23 @@ def fuseByFadeInAndFadeOut(images, direction="horizontal"):
         for i in range(0, row):
             weightMatA[i, :] = weightMatA[i, :] * (row - i) * 1.0 / row
             weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
+
     # 测试
-    # print(row)
-    # print(col)
-    # print(weightMatA[0, :])
-    # print(weightMatB[0, :])
-    # print(weightMatA[:, 0])
-    # print(weightMatB[:, 0])
+    # print(weightMatA + weightMatB)
+    # print("     The row fo roi region is:" + str(row))
+    # print("     The col fo roi region is:" + str(col))
+    # if direction == "horizontal":
+    #     for i in range(0, col):
+    #         print(weightMatA[0, i])
+    #     print("***")
+    #     for i in range(0, col):
+    #         print(weightMatB[0, i])
+    # elif direction == "vertical":
+    #     for i in range(0, row):
+    #         print(weightMatA[i, 0])
+    #     print("***")
+    #     for i in range(0, row):
+    #         print(weightMatB[i, 0])
     fuseRegion = np.uint8((weightMatA * imageA.astype(np.int)) + (weightMatB * imageB.astype(np.int)))
     return fuseRegion
 
@@ -72,26 +82,36 @@ def fuseByTrigonometric(images, direction="horizontal"):
     '''
     (imageA, imageB) = images
     row, col = imageA.shape[:2]
-    weightMatA = np.ones(imageA.shape, dtype=np.float32)
-    weightMatB = np.ones(imageA.shape, dtype=np.float32)
+    weightMatA = np.ones(imageA.shape, dtype=np.float64)
+    weightMatB = np.ones(imageA.shape, dtype=np.float64)
     if direction == "horizontal":
         for i in range(0, col):
-            weightMatA[:, i] = math.pow(math.cos((weightMatA[:, i] * (col - i) * 1.0 / col) * math.pi / 2), 2)
-            weightMatB[:, col - i - 1] = math.pow(math.sin((weightMatB[:, col - i - 1] * (col - i) * 1.0 / col) * math.pi / 2), 2)
+            weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
+            weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
     elif direction == "vertical":
         for i in range(0, row):
-            weightMatA[i, :] = math.pow(math.cos((weightMatA[i, :] * (row - i) * 1.0 / row) * math.pi / 2), 2)
-            weightMatB[row - i - 1, :] = math.pow(math.sin((weightMatB[row - i - 1, :] * (row - i) * 1.0 / row) * math.pi / 2), 2)
-    # 测试
-    print(row)
-    print(col)
-    print(weightMatA[0, :])
-    print(weightMatB[0, :])
-    print(weightMatA[:, 0])
-    print(weightMatB[:, 0])
+            weightMatA[i, :] = weightMatA[i, :] * (row - i) * 1.0 / row
+            weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
+    weightMatA = np.power(np.sin(weightMatA * math.pi / 2), 2)
+    weightMatB = 1 - weightMatA
+    # # 测试
+    # print(weightMatA + weightMatB)
+    # print("     The row fo roi region is:" + str(row))
+    # print("     The col fo roi region is:" + str(col))
+    # if direction == "horizontal":
+    #     for i in range(0, col):
+    #         print(weightMatA[0, i])
+    #     print("***")
+    #     for i in range(0, col):
+    #         print(weightMatB[0, i])
+    # elif direction == "vertical":
+    #     for i in range(0, row):
+    #         print(weightMatA[i, 0])
+    #     print("***")
+    #     for j in range(0, row):
+    #         print(weightMatB[j, 0])
     fuseRegion = np.uint8((weightMatA * imageA.astype(np.int)) + (weightMatB * imageB.astype(np.int)))
     return fuseRegion
-
 
 def fuseByOptimalSeamLine(images, direction="horizontal"):
     '''
@@ -158,3 +178,6 @@ def stretchImage(Region):
     maxI = Region.max()
     out = (Region - minI) / (maxI - minI) * 255
     return out
+
+if __name__=="__main__":
+    print(np.cos(math.pi/3))

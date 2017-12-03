@@ -40,7 +40,7 @@ class Stitcher:
         elif fuseMethod == "multiBandBlending":
             fuseRegion = ImageFusion.fuseByMultiBandBlending(images)
         elif fuseMethod == "trigonometric":
-            fuseRegion = ImageFusion.fuseByTrigonometric(images)
+            fuseRegion = ImageFusion.fuseByTrigonometric(images,direction)
         return fuseRegion
 
     def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
@@ -212,9 +212,9 @@ class Stitcher:
         matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, ratio)
         ptsA = np.float32([kpsA[i] for (_, i) in matches])
         ptsB = np.float32([kpsB[i] for (i, _) in matches])
-        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, reprojThresh)
-        print(H)
-        print(status)
+        # (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, reprojThresh)
+        # print(H)
+        # print(status)
         # 根据匹配的特征点计算偏移量
         dx, dy = self.getOffsetByMode([roiImageA, roiImageB], matches, kpsA, kpsB, featuresA, featuresB, direction=direction)
         print(" The offset of stitching: dx is " + str(dx) + " and dy is " + str(dy))
@@ -329,13 +329,13 @@ class Stitcher:
 
 
 if __name__=="__main__":
-    # imageA = cv2.cvtColor(cv2.imread("images/dendriticCrystal/1/1-001.jpg"), cv2.COLOR_RGB2GRAY)
-    # imageB = cv2.cvtColor(cv2.imread("images/dendriticCrystal/1/1-002.jpg"), cv2.COLOR_RGB2GRAY)
-    imageA = cv2.cvtColor(cv2.imread("images/dendriticCrystal/iron/1-001.jpg"), cv2.COLOR_RGB2GRAY)
-    imageB = cv2.cvtColor(cv2.imread("images/dendriticCrystal/iron/1-002.jpg"), cv2.COLOR_RGB2GRAY)
+    imageA = cv2.cvtColor(cv2.imread("images/dendriticCrystal/1/1-001.jpg"), cv2.COLOR_RGB2GRAY)
+    imageB = cv2.cvtColor(cv2.imread("images/dendriticCrystal/1/1-030.jpg"), cv2.COLOR_RGB2GRAY)
+    # imageA = cv2.cvtColor(cv2.imread("images/dendriticCrystal/iron/1-001.jpg"), cv2.COLOR_RGB2GRAY)
+    # imageB = cv2.cvtColor(cv2.imread("images/dendriticCrystal/iron/1-002.jpg"), cv2.COLOR_RGB2GRAY)
     startTime = time.time()
     stitcher = Stitcher()
-    result = stitcher.stitchByOffset([imageA, imageB], ratio=0.75, reprojThresh=4.0, featureMethod="surf", direction="vertical", searchLength=150, searchLengthForLarge=-1, fuseMethod="fadeInAndFadeOut")
+    result = stitcher.stitchByOffset([imageA, imageB], ratio=0.75, reprojThresh=4.0, featureMethod="surf", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="trigonometric")
     endTime = time.time()
     print(" The cost time is :" + str(endTime-startTime) +"s")
     cv2.namedWindow("Result", 0)
@@ -343,5 +343,3 @@ if __name__=="__main__":
     cv2.imwrite("111.jpg", result)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-# "average""maximum""minimum""linearBlending""multiBandBlending"
