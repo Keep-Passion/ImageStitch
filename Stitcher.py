@@ -21,7 +21,7 @@ class Stitcher:
     def stitchTwoRows(self, upColumnAddress, downColumnAddress, numPixelControl):
         pass
 
-    def fuseImage(self, images, direction="horizontal", fuseMethod = "linearBlending"):
+    def fuseImage(self, images, direction="horizontal", fuseMethod = "fadeInAndFadeOut"):
         (imageA, imageB) = images
         fuseRegion = np.zeros(imageA.shape, np.uint8)
         # cv2.namedWindow("imageA", 0)
@@ -35,10 +35,12 @@ class Stitcher:
             fuseRegion = ImageFusion.fuseByMaximum(images)
         elif fuseMethod == "minimum":
             fuseRegion = ImageFusion.fuseByMinimum(images)
-        elif fuseMethod == "linearBlending":
-            fuseRegion = ImageFusion.fuseByLinearBlending(images,direction)
+        elif fuseMethod == "fadeInAndFadeOut":
+            fuseRegion = ImageFusion.fuseByFadeInAndFadeOut(images,direction)
         elif fuseMethod == "multiBandBlending":
             fuseRegion = ImageFusion.fuseByMultiBandBlending(images)
+        elif fuseMethod == "trigonometric":
+            fuseRegion = ImageFusion.fuseByTrigonometric(images)
         return fuseRegion
 
     def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
@@ -158,7 +160,7 @@ class Stitcher:
                 dy.append(ptA[1] - ptB[1])
         return int(mode(np.array(dx), axis=None)[0]), int(mode(np.array(dy), axis=None)[0])
 
-    def getStitchByOffset(self, images, dx, dy, direction="horizontal", fuseMethod="linearBlending"):
+    def getStitchByOffset(self, images, dx, dy, direction="horizontal", fuseMethod="fadeInAndFadeOut"):
         (imageA, imageB) = images
         (hA, wA) = imageA.shape[:2]
         (hB, wB) = imageB.shape[:2]
@@ -196,7 +198,7 @@ class Stitcher:
         return stitchImage
 
     # 拼接函数，根据位移拼接
-    def stitchByOffset(self, images, ratio=0.75, reprojThresh=4.0, featureMethod="sift", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="linearBlending"):
+    def stitchByOffset(self, images, ratio=0.75, reprojThresh=4.0, featureMethod="sift", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="fadeInAndFadeOut"):
         # 获取输入图片及其搜索区域
         (imageA, imageB) = images
         roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=searchLength, searchLengthForLarge=searchLengthForLarge)
@@ -333,7 +335,7 @@ if __name__=="__main__":
     imageB = cv2.cvtColor(cv2.imread("images/dendriticCrystal/iron/1-002.jpg"), cv2.COLOR_RGB2GRAY)
     startTime = time.time()
     stitcher = Stitcher()
-    result = stitcher.stitchByOffset([imageA, imageB], ratio=0.75, reprojThresh=4.0, featureMethod="surf", direction="vertical", searchLength=150, searchLengthForLarge=-1, fuseMethod="linearBlending")
+    result = stitcher.stitchByOffset([imageA, imageB], ratio=0.75, reprojThresh=4.0, featureMethod="surf", direction="vertical", searchLength=150, searchLengthForLarge=-1, fuseMethod="fadeInAndFadeOut")
     endTime = time.time()
     print(" The cost time is :" + str(endTime-startTime) +"s")
     cv2.namedWindow("Result", 0)

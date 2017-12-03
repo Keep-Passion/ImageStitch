@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import math
 
 def fuseByAverage(images):
     '''
@@ -32,9 +33,9 @@ def fuseByMinimum(images):
     fuseRegion = np.minimum(imageA, imageB)
     return fuseRegion
 
-def fuseByLinearBlending(images, direction="horizontal"):
+def fuseByFadeInAndFadeOut(images, direction="horizontal"):
     '''
-    线性融合
+    渐入渐出融合
     :param images:输入两个相同区域的图像
     :param direction: 横向拼接还是纵向拼接
     :return:融合后的图像
@@ -60,6 +61,37 @@ def fuseByLinearBlending(images, direction="horizontal"):
     # print(weightMatB[:, 0])
     fuseRegion = np.uint8((weightMatA * imageA.astype(np.int)) + (weightMatB * imageB.astype(np.int)))
     return fuseRegion
+
+def fuseByTrigonometric(images, direction="horizontal"):
+    '''
+    三角函数融合
+    引用自《一种三角函数权重的图像拼接算法》知网
+    :param images:输入两个相同区域的图像
+    :param direction: 横向拼接还是纵向拼接
+    :return:融合后的图像
+    '''
+    (imageA, imageB) = images
+    row, col = imageA.shape[:2]
+    weightMatA = np.ones(imageA.shape, dtype=np.float32)
+    weightMatB = np.ones(imageA.shape, dtype=np.float32)
+    if direction == "horizontal":
+        for i in range(0, col):
+            weightMatA[:, i] = math.pow(math.cos((weightMatA[:, i] * (col - i) * 1.0 / col) * math.pi / 2), 2)
+            weightMatB[:, col - i - 1] = math.pow(math.sin((weightMatB[:, col - i - 1] * (col - i) * 1.0 / col) * math.pi / 2), 2)
+    elif direction == "vertical":
+        for i in range(0, row):
+            weightMatA[i, :] = math.pow(math.cos((weightMatA[i, :] * (row - i) * 1.0 / row) * math.pi / 2), 2)
+            weightMatB[row - i - 1, :] = math.pow(math.sin((weightMatB[row - i - 1, :] * (row - i) * 1.0 / row) * math.pi / 2), 2)
+    # 测试
+    print(row)
+    print(col)
+    print(weightMatA[0, :])
+    print(weightMatB[0, :])
+    print(weightMatA[:, 0])
+    print(weightMatB[:, 0])
+    fuseRegion = np.uint8((weightMatA * imageA.astype(np.int)) + (weightMatB * imageB.astype(np.int)))
+    return fuseRegion
+
 
 def fuseByOptimalSeamLine(images, direction="horizontal"):
     '''
