@@ -343,4 +343,3 @@ if __name__=="__main__":
     cv2.imwrite("111.jpg", result)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    cv2.seamlessClone()

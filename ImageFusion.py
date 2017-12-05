@@ -122,7 +122,10 @@ def fuseByOptimalSeamLine(images, direction="horizontal"):
     '''
     (imageA, imageB) = images
     row, col = imageA.shape[:2]
-    pass
+    value = caculateVaule(images)
+    mask = findOptimalSeamLine(value, direction)
+    fuseRegion = (mask[mask == 0] + 1)
+    return fuseRegion
 
 def fuseByMultiBandBlending(images):
     (imageA, imageB) = images
@@ -132,6 +135,18 @@ def fuseByMultiBandBlending(images):
     cv2.imshow("result", imagesReturn)
     cv2.waitKey(0)
     return imagesReturn
+
+
+def caculateVaule(images):
+    (imageA, imageB) = images
+    value = np.zeros(imageA.shape, dtype=np.float32)
+    pass
+
+def findOptimalSeamLine(value, direction="horizontal"):
+    if direction == "horizontal":
+        pass
+    elif direction == "vertical":
+        pass
 
 #均值融合
 def BlendArbitrary2(img1, img2, level):
@@ -178,6 +193,3 @@ def stretchImage(Region):
     maxI = Region.max()
     out = (Region - minI) / (maxI - minI) * 255
     return out
-
-if __name__=="__main__":
-    print(np.cos(math.pi/3))
