@@ -121,10 +121,13 @@ def fuseByOptimalSeamLine(images, direction="horizontal"):
     :return:融合后的图像
     '''
     (imageA, imageB) = images
-    row, col = imageA.shape[:2]
     value = caculateVaule(images)
+    print(value)
+    print("here")
     mask = findOptimalSeamLine(value, direction)
-    fuseRegion = (mask[mask == 0] + 1)
+    fuseRegion = imageA.copy()
+    fuseRegion[mask == 0] = imageA[mask == 0]
+    fuseRegion[mask == 1] = imageB[mask == 1]
     return fuseRegion
 
 def fuseByMultiBandBlending(images):
@@ -136,18 +139,51 @@ def fuseByMultiBandBlending(images):
     cv2.waitKey(0)
     return imagesReturn
 
-
 def caculateVaule(images):
     (imageA, imageB) = images
-    value = np.zeros(imageA.shape, dtype=np.float32)
-    pass
+    row, col = imageA.shape[:2]
+    # value = np.zeros(imageA.shape, dtype=np.float32)
+    Ecolor = (imageA - imageB).astype(np.float32)
+    Sx = np.array([[-1, 0, 1],
+                   [-2, 0, 2],
+                   [-1, 0, 1]])
+    Sy = np.array([[-1, -2, -1],
+                   [ 0,  0,  0],
+                   [ 1,  2,  1]])
+    Egeometry = np.power(cv2.filter2D(Ecolor, -1, Sx), 2) + np.power(cv2.filter2D(Ecolor, -1, Sy), 2)
+    diff = abs(imageA - imageB) / np.maximum(imageA, imageB)
+    diffMax = np.amax(diff)
+    infinet = 10000
+    W = 10
+    for i in range(0, row):
+        for j in range(0, col):
+            if diff[i, j] < 0.7 * diffMax:
+                diff[i, j] = W * diff[i, j] / diffMax
+            else:
+                diff[i, j] = infinet
+    value = diff * (np.power(Ecolor, 2) + Egeometry)
+    return value
 
 def findOptimalSeamLine(value, direction="horizontal"):
-    if direction == "horizontal":
-        pass
-    elif direction == "vertical":
-        pass
+    if direction == "vertical":
+        value = np.transpose(value)
+    row, col = value.shape[:2]
+    indexMatrix = np.zeros(value.shape, dtype=np.uint8)
+    dpMatrix = np.zeros(value.shape, dtype=np.float32)
 
+    dpMatrix[0, :] = value[0, :]
+    indexMatrix[0, :] = indexMatrix[0, :] - 1
+    for i in range(1, row):
+        for j in range(1, col):
+            if j == 0:
+                np.array(value[i + 1, j], value[i + 1, j + 1]).min()
+                np.array(value[i + 1, j], value[i + 1, j + 1]).argmin() + 1
+            elif j == col - 1:
+                np.array(value[i + 1, j], value[i + 1, j - 1]).min()
+                np.array(value[i + 1, j], value[i + 1, j - 1]).argmin()
+            else:
+                np.array(value[i + 1, j - 1], value[i + 1, j], value[i + 1, j + 1]).min()
+                np.array(value[i + 1, j - 1], value[i + 1, j], value[i + 1, j + 1]).argmin()
 #均值融合
 def BlendArbitrary2(img1, img2, level):
     # img1 and img2 have the same size

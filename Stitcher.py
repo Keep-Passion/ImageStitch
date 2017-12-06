@@ -41,6 +41,8 @@ class Stitcher:
             fuseRegion = ImageFusion.fuseByMultiBandBlending(images)
         elif fuseMethod == "trigonometric":
             fuseRegion = ImageFusion.fuseByTrigonometric(images,direction)
+        elif fuseMethod == "optimalSeamLine":
+            fuseRegion = ImageFusion.fuseByOptimalSeamLine(images, direction)
         return fuseRegion
 
     def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
@@ -335,7 +337,7 @@ if __name__=="__main__":
     # imageB = cv2.cvtColor(cv2.imread("images/dendriticCrystal/iron/1-002.jpg"), cv2.COLOR_RGB2GRAY)
     startTime = time.time()
     stitcher = Stitcher()
-    result = stitcher.stitchByOffset([imageA, imageB], ratio=0.75, reprojThresh=4.0, featureMethod="surf", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="trigonometric")
+    result = stitcher.stitchByOffset([imageA, imageB], ratio=0.75, reprojThresh=4.0, featureMethod="surf", direction="horizontal", searchLength=150, searchLengthForLarge=-1, fuseMethod="optimalSeamLine")
     endTime = time.time()
     print(" The cost time is :" + str(endTime-startTime) +"s")
     cv2.namedWindow("Result", 0)
