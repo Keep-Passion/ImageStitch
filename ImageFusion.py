@@ -122,12 +122,17 @@ def fuseByOptimalSeamLine(images, direction="horizontal"):
     '''
     (imageA, imageB) = images
     value = caculateVaule(images)
-    print(value)
-    print("here")
-    mask = findOptimalSeamLine(value, direction)
+    # print(value)
+    mask = 1 - findOptimalSeamLine(value, direction)
+    # cv2.namedWindow("mask", 0)
+    cv2.imshow("mask", (mask*255).astype(np.uint8))
+    cv2.waitKey(0)
     fuseRegion = imageA.copy()
-    fuseRegion[mask == 0] = imageA[mask == 0]
-    fuseRegion[mask == 1] = imageB[mask == 1]
+    fuseRegion[(1 - mask) == 0] = imageA[(1 - mask) == 0]
+    fuseRegion[(1 - mask) == 1] = imageB[(1 - mask) == 1]
+    drawFuseRegion = drawOptimalLine(1- mask, fuseRegion)
+    cv2.imwrite("optimalLine.jpg", drawFuseRegion)
+    cv2.imwrite("fuseRegion.jpg", BlendArbitrary(imageA,imageB, mask, 4))
     return fuseRegion
 
 def fuseByMultiBandBlending(images):
@@ -144,15 +149,17 @@ def caculateVaule(images):
     row, col = imageA.shape[:2]
     # value = np.zeros(imageA.shape, dtype=np.float32)
     Ecolor = (imageA - imageB).astype(np.float32)
-    Sx = np.array([[-1, 0, 1],
-                   [-2, 0, 2],
-                   [-1, 0, 1]])
-    Sy = np.array([[-1, -2, -1],
+    Sx = np.array([[-2, 0, 2],
+                   [-1, 0, 1],
+                   [-2, 0, 2]])
+    Sy = np.array([[-2, -1, -2],
                    [ 0,  0,  0],
-                   [ 1,  2,  1]])
+                   [ 2,  1,  2]])
     Egeometry = np.power(cv2.filter2D(Ecolor, -1, Sx), 2) + np.power(cv2.filter2D(Ecolor, -1, Sy), 2)
-    diff = abs(imageA - imageB) / np.maximum(imageA, imageB)
+
+    diff = np.abs(imageA - imageB) / np.maximum(imageA, imageB).max()
     diffMax = np.amax(diff)
+
     infinet = 10000
     W = 10
     for i in range(0, row):
@@ -168,22 +175,72 @@ def findOptimalSeamLine(value, direction="horizontal"):
     if direction == "vertical":
         value = np.transpose(value)
     row, col = value.shape[:2]
-    indexMatrix = np.zeros(value.shape, dtype=np.uint8)
+    indexMatrix = np.zeros(value.shape, dtype=np.int)
     dpMatrix = np.zeros(value.shape, dtype=np.float32)
+    mask = np.zeros(value.shape, dtype=np.uint8)
 
     dpMatrix[0, :] = value[0, :]
     indexMatrix[0, :] = indexMatrix[0, :] - 1
     for i in range(1, row):
-        for j in range(1, col):
+        for j in range(0, col):
             if j == 0:
-                np.array(value[i + 1, j], value[i + 1, j + 1]).min()
-                np.array(value[i + 1, j], value[i + 1, j + 1]).argmin() + 1
+                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).min()
+                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).argmin()
+                # print("last=" + str(np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]])))
+                # print("this=" + str(value[i, j]))
+                # print(dpMatrix[i, j])
+                # print(indexMatrix[i, j])
             elif j == col - 1:
-                np.array(value[i + 1, j], value[i + 1, j - 1]).min()
-                np.array(value[i + 1, j], value[i + 1, j - 1]).argmin()
+                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[i, j]).min()
+                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[i, j]).argmin() - 1
             else:
-                np.array(value[i + 1, j - 1], value[i + 1, j], value[i + 1, j + 1]).min()
-                np.array(value[i + 1, j - 1], value[i + 1, j], value[i + 1, j + 1]).argmin()
+                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).min()
+                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).argmin() - 1
+    print(indexMatrix)
+    # generate the mask
+    index = dpMatrix[row - 1, :].argmin()
+    # print("here" + str(dpMatrix[row - 1, :]))
+    # print(index)
+    for j in range(index, col):
+        mask[row-1, j] = 1
+    for i in range(row - 1, 1, -1):
+        index = indexMatrix[i, index] + index
+        # print(index)
+        for j in range(index, col):
+            mask[i-1, j] = 1
+    if direction == "vertical":
+        mask = np.transpose(mask)
+    return mask
+
+def drawOptimalLine(mask, fuseRegion):
+    row, col = mask.shape[:2]
+    drawing = np.zeros([row, col, 3], dtype=np.uint8)
+    drawing = cv2.cvtColor(fuseRegion, cv2.COLOR_GRAY2BGR)
+    for j in range(0, col):
+        for i in range(0, row):
+            if mask[i, j] == 1:
+                drawing[i, j] = np.array([0, 0, 255])
+                break
+    return drawing
+
+#带权拉普拉斯金字塔融合
+def BlendArbitrary(img1, img2, R, level):
+    # img1 and img2 have the same size
+    # R represents the region to be combined
+    # level is the expected number of levels in the pyramid
+
+    LA, GA = LaplacianPyramid(img1, level)
+    LB, GB = LaplacianPyramid(img2, level)
+    GR = GaussianPyramid(R, level)
+    GRN = []
+    for i in range(level):
+        GRN.append(np.ones((GR[i].shape[0], GR[i].shape[1])) - GR[i])
+    LC = []
+    for i in range(level):
+        LC.append(LA[i] * GR[level - i -1] + LB[i] * GRN[level - i - 1])
+    result = reconstruct(LC)
+    return  result
+
 #均值融合
 def BlendArbitrary2(img1, img2, level):
     # img1 and img2 have the same size
