@@ -104,8 +104,8 @@ class Stitcher:
                 return (False, "  We don't develop the stitching with ransac method, Plesae wait for updating")
 
         self.printAndWrite("  The offset of stitching: dx is "+ str(offset[0]) + " dy is " + str(offset[1]))
-        result = self.getStitchByOffset(images, offset, fuseMethod=fuseMethod)
-        return (True, result)
+        (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB) = self.getStitchByOffset(images, offset, fuseMethod=fuseMethod)
+        return (True, stitchImage)
 
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域
@@ -272,7 +272,7 @@ class Stitcher:
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
         fuseRegion = self.fuseImage([roiImageRegionA, roiImageRegionB], direction=direction, fuseMethod=fuseMethod)
         stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
-        return stitchImage
+        return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
 
         #     if dy > 0 and dx < 0:
         #         cutImageA = self.creatOffsetImage(imageA, direction, dx)
@@ -326,7 +326,6 @@ class Stitcher:
         elif fuseMethod[1] == "optimalSeamLine":
             fuseRegion = ImageFusion.fuseByOptimalSeamLine(images, direction)
         return fuseRegion
-
 
 if __name__=="__main__":
     outputAddress = "result/stitchedResult.jpg"
