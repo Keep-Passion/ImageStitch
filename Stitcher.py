@@ -106,7 +106,12 @@ class Stitcher:
                 if status == True:
                     break
         self.printAndWrite("  The offset of stitching: dx is "+ str(offset[0]) + " dy is " + str(offset[1]))
+<<<<<<< HEAD
         return (True, offset)
+=======
+        (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB) = self.getStitchByOffset(images, offset, fuseMethod=fuseMethod)
+        return (True, stitchImage)
+>>>>>>> be8dbf1c09374525a6d11526ea6735483a19adac
 
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域
@@ -279,8 +284,13 @@ class Stitcher:
         # cv2.imshow("imageB", roiImageRegionB)
         # cv2.waitKey(0)
         fuseRegion = self.fuseImage([roiImageRegionA, roiImageRegionB], direction=direction, fuseMethod=fuseMethod)
+<<<<<<< HEAD
         stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion
         return stitchImage
+=======
+        stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
+        return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
+>>>>>>> be8dbf1c09374525a6d11526ea6735483a19adac
 
         #     if dy > 0 and dx < 0:
         #         cutImageA = self.creatOffsetImage(imageA, direction, dx)
@@ -334,7 +344,6 @@ class Stitcher:
         elif fuseMethod[0] == "optimalSeamLine":
             fuseRegion = ImageFusion.fuseByOptimalSeamLine(images, direction)
         return fuseRegion
-
 
 if __name__=="__main__":
     outputAddress = "result/"
