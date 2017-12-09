@@ -237,7 +237,6 @@ class Stitcher:
             direction = "vertical"
 
         if dx >= 0 and dy >= 0:
-            print("here")
             # The first image is located at the left top, the second image located at the right bottom
             stitchImage = np.zeros((max(hA, dx + hB), max(dy + wB, wA)), dtype=np.uint8)
             roi_ltx = dx; roi_lty = dy

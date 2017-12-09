@@ -19,11 +19,6 @@ if __name__=="__main__":
 
         (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="vertical")
         if status == True:
-            print("拼接成功")
             cv2.imwrite(outputAddress + "\\stitching_result_" + str(i + 1) + ".jpg", result)
-        # else:
-        #     # cv2.namedWindow("Result", 0)
-        #     # cv2.imshow("Result", result)
-        #     # cv2.imwrite(outputAddress + "\\stitching_result_" + str(i + 1) + ".jpg", result)
-        #     # cv2.waitKey(0)
-        #     # cv2.destroyAllWindows()
+        if status == False:
+            print("拼接失败")
