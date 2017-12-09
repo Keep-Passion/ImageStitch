@@ -45,6 +45,14 @@ class Stitcher:
             self.printAndWrite("  The time of stitching is " + str(endTime - startTime) + "s")
         return (status, stitchImage)
 
+    def gridStitch(self, fileList, filePosition, registrateMethod, fuseMethod, shootOrder="snakeByCol"):
+        largeAreaNum = len(fileList)
+        offsetList =
+        for i in range(0, largeAreaNum)
+        if shootOrder == "snakeByCol":
+
+
+
     def stitchOneColumn(self, startIndex, endIndex, numPixelControl, Files):
         pass
 
@@ -272,46 +280,9 @@ class Stitcher:
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
             stitchImage[0: hB, 0: wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-        # print(roiImageRegionA.shape)
-        # print(roiImageRegionB.shape)
-        # cv2.imshow("imageA", roiImageRegionA)
-        # cv2.imshow("imageB", roiImageRegionB)
-        # cv2.waitKey(0)
         fuseRegion = self.fuseImage([roiImageRegionA, roiImageRegionB], direction=direction, fuseMethod=fuseMethod)
         stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
-
-        #     if dy > 0 and dx < 0:
-        #         cutImageA = self.creatOffsetImage(imageA, direction, dx)
-        #         stitchImage = np.hstack((cutImageA[:, 0:dy], imageB[0:hA+dx, :]))
-        #         if fuseMethod[0] != "notFuse":
-        #             fuseRegion = self.fuseImage([cutImageA[0:hA+dx, dy:wA], imageB[0:hA+dx, 0:dy]], direction=direction,
-        #                                          fuseMethod=fuseMethod)
-        #             stitchImage[:, dy:wA] = fuseRegion[:]
-        #     elif dy > 0 and dx >= 0:
-        #         cutImageA = self.creatOffsetImage(imageA, direction, dx)
-        #         stitchImage = np.hstack((cutImageA[0:hA-dx, 0:dy], imageB[0:hA-dx, :]))
-        #         # 判断是否对图像进行融合
-        #         if fuseMethod[0] != "notFuse":
-        #             fuseRegion = self.fuseImage([cutImageA[0:hA-dx, dy:wA], imageB[0:hA-dx,0:dy]], direction=direction,
-        #                                          fuseMethod=fuseMethod)
-        #             stitchImage[:, dy:wA] = fuseRegion[:]
-        # elif abs(dx) > abs(dy):           # stitch in vertical direction
-        #     if dx > 0 and dy <= 0:
-        #         cutImageA = self.creatOffsetImage(imageA, direction, dy)
-        #         stitchImage = np.vstack((cutImageA[0:hA-dx, (-dy):wA], imageB[:, 0:wB+dy]))
-        #         if fuseMethod[0] != "notFuse":
-        #             fuseRegion = self.fuseImage([cutImageA[hA-dx:hA, (-dy):wA], imageB[0:dx, 0:wB+dy]], direction=direction,
-        #                                          fuseMethod=fuseMethod)
-        #             stitchImage[hA-dx:hA, :] = fuseRegion[:]
-        #     elif dx > 0 and dy >= 0:
-        #         cutImageA = self.creatOffsetImage(imageA, direction, dy)
-        #         stitchImage = np.vstack((cutImageA[0:hA-dx, dy:wA], imageB[:, 0:wB-dy]))
-        #         if fuseMethod[0] != "notFuse":
-        #             fuseRegion = self.fuseImage([cutImageA[hA-dx:hA, dy:wA], imageB[0:dx, 0:wB-dy]], direction=direction,
-        #                                          fuseMethod=fuseMethod)
-        #             stitchImage[hA - dx:hA, :] = fuseRegion[:]
-        # return stitchImage
 
     def fuseImage(self, images, fuseMethod, direction="horizontal"):
         (imageA, imageB) = images
