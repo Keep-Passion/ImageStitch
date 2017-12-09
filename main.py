@@ -1,38 +1,29 @@
-# coding=utf-8
-
-import os
+import Stitcher
+import numpy as np
 import cv2
-import fusion
-import time
-import gc
-from sampling import sampling
+import glob
 
-def fusionImages(image_files):
-    # 读取第一张图作为初始结果
-    result = cv2.imread("LPtest/{}".format(image_files[0]), 0)
-    imgin1 = result
+if __name__=="__main__":
+    projectAddress = ".\\images\\iron"
+    fileNum = 50
+    for i in range(0, fileNum):
+        fileAddress = projectAddress + "\\" + str(i + 1) + "\\"
+        fileList = glob.glob(fileAddress + "*.jpg")
 
-    for img in image_files:
-        print "Reading file {}".format(img)
-        imgin2 = cv2.imread("LPtest/{}".format(img), 0)
-        result, imgin1 = fusion.detect(imgin1, imgin2, result)
-        del imgin2
+        outputAddress = "result\\"
+        evaluate = (True, "evaluate.txt")
+        isPrintLog = True
+        stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
+        registrateMethod = ("featureSearchWithIncrease", "surf", 0.75, ("mode", 100), (150, -1))
+        fuseMethod = ("notFuse", "Test")
 
-
-if __name__ == "__main__":
-    start = time.clock()
-    # sampling("500X(5.17).avi")
-    # samptime = time.clock() - start
-    # print "sample time:",samptime
-
-    image_files = sorted(os.listdir("LPtest"))
-    for img in image_files:
-        if img.split(".")[-1].lower() not in ["jpg", "jpeg", "png"]:
-            image_files.remove(img)
-
-    fusionImages(image_files)
-    print "That's All Folks!"
-
-    end = time.clock()
-    run_time = end - start
-    print run_time
+        (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="vertical")
+        if status == True:
+            print("拼接成功")
+            cv2.imwrite(outputAddress + "\\stitching_result_" + str(i + 1) + ".jpg", result)
+        # else:
+        #     # cv2.namedWindow("Result", 0)
+        #     # cv2.imshow("Result", result)
+        #     # cv2.imwrite(outputAddress + "\\stitching_result_" + str(i + 1) + ".jpg", result)
+        #     # cv2.waitKey(0)
+        #     # cv2.destroyAllWindows()

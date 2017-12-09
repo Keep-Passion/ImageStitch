@@ -9,7 +9,7 @@ class Stitcher:
     '''
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
 	'''
-    outputAddress = "result/stitchedResult.jpg"
+    outputAddress = "result/"
     isEvaluate = False
     evaluateFile = "evaluate.txt"
     isPrintLog = False
@@ -24,7 +24,7 @@ class Stitcher:
         if self.isPrintLog:
             print(content)
         if self.isEvaluate:
-            f = open(self.evaluateFile, "a")
+            f = open(self.outputAddress + self.evaluateFile, "a")
             f.write(content)
             f.write("\n")
             f.close()
@@ -35,13 +35,13 @@ class Stitcher:
         imageA = cv2.imread(fileList[0], 0)
         imageB = cv2.imread(fileList[1], 0)
         startTime = time.time()
-        (status, result) = self.stitchTwoImages([imageA,imageB], registrateMethod, fuseMethod, direction=direction)
+        (status, offset) = self.calculateOffset([imageA,imageB], registrateMethod, fuseMethod, direction=direction)
         endTime = time.time()
 
         if status == False:
             self.printAndWrite(result)
         else:
-            cv2.imwrite(self.outputAddress, result)
+            result = self.getStitchByOffset([imageA, imageB], offset, fuseMethod=fuseMethod)
             self.printAndWrite("  The time of stitching is " + str(endTime - startTime) + "s")
         return (status, result)
 
@@ -57,7 +57,7 @@ class Stitcher:
     def stitchTwoRows(self, upColumnAddress, downColumnAddress, numPixelControl):
         pass
 
-    def stitchTwoImages(self, images, registrateMethod, fuseMethod, direction="horizontal"):
+    def calculateOffset(self, images, registrateMethod, fuseMethod, direction="horizontal"):
         '''
         Stitch two images
         :param images: [imageA, imageB]
@@ -67,45 +67,46 @@ class Stitcher:
         :return:
         '''
         (imageA, imageB) = images
+        offset = [0, 0]
         if  registrateMethod[0] == "phaseCorrection":
             return (False, "  We don't develop the phase Correction method, Plesae wait for updating")
-        elif  registrateMethod[0] == "featureSearch":
+        elif  registrateMethod[0] == "featureSearchWithIncrease":
             featureMethod = registrateMethod[1]        # "sift","surf" or "orb"
             searchRatio = registrateMethod[2]          # 0.75 is common value for matches
             offsetCaculate = registrateMethod[3][0]    # "mode" or "ransac"
             offsetEvaluate = registrateMethod[3][1]    # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
-            if registrateMethod[4][0] == False:        # means whether or not use roi region
-                roiImageA = imageA
-                roiImageB = imageB
-            else:
-                roiFirstLength = registrateMethod[4][1]     # roi length for stitching in first direction
-                roiSecondLength = registrateMethod[4][2]    # roi length for stitching in second direction
+            roiFirstLength = registrateMethod[4][0]     # roi length for stitching in first direction
+            roiSecondLength = registrateMethod[4][1]    # roi length for stitching in second direction
+
+            if direction == "horizontal":
+                maxI = int(imageA.shape[1] / (2 * roiFirstLength))
+            elif direction == "vertical":
+                maxI = int(imageA.shape[0] / (2 * roiFirstLength))
+            for i in range(1, maxI+1):
                 # get the roi region of images
-                roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=roiFirstLength,
-                                              searchLengthForLarge=roiSecondLength)
-                roiImageB = self.getROIRegion(imageB, direction=direction, order="second", searchLength=roiFirstLength,
-                                              searchLengthForLarge=roiSecondLength)
-            # get the feature points
-            (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
-            (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
+                print("  i is: " + str(i))
+                roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=i * roiFirstLength,
+                                                  searchLengthForLarge=roiSecondLength)
+                roiImageB = self.getROIRegion(imageB, direction=direction, order="second", searchLength=i * roiFirstLength,
+                                                  searchLengthForLarge=roiSecondLength)
+                # get the feature points
+                (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
+                (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
 
-            # match all the feature points and return the list of offset
-            (dxArray, dyArray) = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
-            if registrateMethod[4][0] == True:
+                # match all the feature points and return the list of offset
+                (dxArray, dyArray) = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
                 if direction == "horizontal":
-                    dyArray = dyArray + imageA.shape[1] - roiFirstLength
+                        dyArray = dyArray + imageA.shape[1] - i * roiFirstLength
                 elif direction == "vertical":
-                    dxArray = dxArray + imageA.shape[0] - roiFirstLength
-            if offsetCaculate == "mode":
-                (status, offset) = self.getOffsetByMode(dxArray, dyArray, evaluateNum=offsetEvaluate)
-                if status == False:
-                    return (False, "  Two images can not match")
-            elif offsetCaculate == "ransac":
-                return (False, "  We don't develop the stitching with ransac method, Plesae wait for updating")
-
+                        dxArray = dxArray + imageA.shape[0] - i * roiFirstLength
+                if offsetCaculate == "mode":
+                    (status, offset) = self.getOffsetByMode(dxArray, dyArray, evaluateNum=offsetEvaluate)
+                elif offsetCaculate == "ransac":
+                    return (False, "  We don't develop the stitching with ransac method, Plesae wait for updating")
+                if status == True:
+                    break
         self.printAndWrite("  The offset of stitching: dx is "+ str(offset[0]) + " dy is " + str(offset[1]))
-        result = self.getStitchByOffset(images, offset, fuseMethod=fuseMethod)
-        return (True, result)
+        return (True, offset)
 
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域
@@ -186,6 +187,7 @@ class Stitcher:
                 # 存储两个点在featuresA, featuresB中的索引值
                 matches.append((m[0].trainIdx, m[0].queryIdx))
 
+        self.printAndWrite("  The number of matching is " + str(len(matches)))
         dxList = []; dyList = []
         # # 获取输入图片及其搜索区域
         # (imageA, imageB) = images
@@ -235,43 +237,49 @@ class Stitcher:
             direction = "vertical"
 
         if dx >= 0 and dy >= 0:
+            print("here")
             # The first image is located at the left top, the second image located at the right bottom
             stitchImage = np.zeros((max(hA, dx + hB), max(dy + wB, wA)), dtype=np.uint8)
             roi_ltx = dx; roi_lty = dy
             roi_rbx = min(dx + hB, hA); roi_rby = min(dy + wB, wA)
-            stitchImage[0: hA, 0:wA] = imageA.copy()
+            stitchImage[0: hA, 0:wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[dx: dx+wB, dy: dy+wB] = imageB.copy()
+            stitchImage[dx: dx+hB, dy: dy+wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
         elif dx >= 0 and dy < 0:
             # The first image is located at the right top, the second image located at the left bottom
             stitchImage = np.zeros((max(hA, dx + hB), -dy + wA), dtype=np.uint8)
-            roi_ltx = -dx; roi_lty = dy
-            roi_rbx = wB;  roi_rby = min(dy + wB, wA)
-            stitchImage[0: hA, -dy:-dy+wA] = imageA.copy()
+            roi_ltx = dx; roi_lty = -dy
+            roi_rbx = hA;  roi_rby = min(-dy + wA, wB)
+            stitchImage[0: hA, -dy:-dy + wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[dx: dx+wB, 0: wB] = imageB.copy()
+            stitchImage[dx: dx+wB, 0: wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
         elif dx < 0 and dy >= 0:
             # The first image is located at the left bottom, the second image located at the right top
             stitchImage = np.zeros((-dx + hA, max(dy + wB, wA)), dtype=np.uint8)
-            roi_ltx = dx; roi_lty = -dy
-            roi_rbx = min(dx + wB, wA);  roi_rby = dy + hB
-            stitchImage[-dx: -dx + hA, 0: wA] = imageA.copy()
+            roi_ltx = -dx; roi_lty = dy
+            roi_rbx = min(-dx + wA, wB);  roi_rby = min(dy + hB, hA)
+            stitchImage[-dx: -dx + hA, 0: wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[0: hB, dy: dy+wB] = imageB.copy()
+            stitchImage[0: hB, dy: dy + wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
         elif dx < 0 and dy < 0:
             # The first image is located at the right bottom, the second image located at the left top
             stitchImage = np.zeros((-dx + hA, -dy + wA), dtype=np.uint8)
             roi_ltx = -dx; roi_lty = -dy
-            roi_rbx = wB;  roi_rby = hB
-            stitchImage[-dx: -dx + hA, -dy: -dy + wA] = imageA.copy()
+            roi_rbx = wA;  roi_rby = hA
+            stitchImage[-dx: -dx + hA, -dy: -dy + wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[0: hB, 0: wB] = imageB.copy()
+            stitchImage[0: hB, 0: wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
+        # print(roiImageRegionA.shape)
+        # print(roiImageRegionB.shape)
+        # cv2.imshow("imageA", roiImageRegionA)
+        # cv2.imshow("imageB", roiImageRegionB)
+        # cv2.waitKey(0)
         fuseRegion = self.fuseImage([roiImageRegionA, roiImageRegionB], direction=direction, fuseMethod=fuseMethod)
-        stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
+        stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion
         return stitchImage
 
         #     if dy > 0 and dx < 0:
@@ -309,33 +317,33 @@ class Stitcher:
     def fuseImage(self, images, fuseMethod, direction="horizontal"):
         (imageA, imageB) = images
         fuseRegion = np.zeros(imageA.shape, np.uint8)
-        if fuseMethod[0] == False:
+        if fuseMethod[0] == "notFuse":
             fuseRegion = imageB
-        elif fuseMethod[1] == "average":
+        elif fuseMethod[0] == "average":
             fuseRegion = ImageFusion.fuseByAverage(images)
-        elif fuseMethod[1] == "maximum":
+        elif fuseMethod[0] == "maximum":
             fuseRegion = ImageFusion.fuseByMaximum(images)
-        elif fuseMethod[1] == "minimum":
+        elif fuseMethod[0] == "minimum":
             fuseRegion = ImageFusion.fuseByMinimum(images)
-        elif fuseMethod[1] == "fadeInAndFadeOut":
+        elif fuseMethod[0] == "fadeInAndFadeOut":
             fuseRegion = ImageFusion.fuseByFadeInAndFadeOut(images,direction)
-        elif fuseMethod[1] == "multiBandBlending":
+        elif fuseMethod[0] == "multiBandBlending":
             fuseRegion = ImageFusion.fuseByMultiBandBlending(images)
-        elif fuseMethod[1] == "trigonometric":
+        elif fuseMethod[0] == "trigonometric":
             fuseRegion = ImageFusion.fuseByTrigonometric(images,direction)
-        elif fuseMethod[1] == "optimalSeamLine":
+        elif fuseMethod[0] == "optimalSeamLine":
             fuseRegion = ImageFusion.fuseByOptimalSeamLine(images, direction)
         return fuseRegion
 
 
 if __name__=="__main__":
-    outputAddress = "result/stitchedResult.jpg"
+    outputAddress = "result/"
     evaluate = (True, "evaluate.txt")
     isPrintLog = True
     stitcher = Stitcher(outputAddress, evaluate, isPrintLog)
     fileList = ["images/dendriticCrystal/iron/1-001.jpg", "images/dendriticCrystal/iron/1-002.jpg"]
     # fileList = ["images/dendriticCrystal/1/1-030.jpg", "images/dendriticCrystal/1/1-031.jpg"]
-    registrateMethod = ("featureSearch", "surf", 0.75, ("mode", 40),(True, 150, -1))
+    registrateMethod = ("featureSearchWithIncrease", "surf", 0.75, ("mode", 100),(150, -1))
     fuseMethod = (True, "fadeInAndFadeOut")
     (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="vertical")
     cv2.namedWindow("Result", 0)
