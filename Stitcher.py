@@ -43,11 +43,10 @@ class Stitcher:
             self.printAndWrite(offset)
             return (status, offset)
         else:
-            self.printAndWrite("  The time of stitching is " + str(endTime - startTime) + "s")
+            self.printAndWrite("  The time of registering is " + str(endTime - startTime) + "s")
             startTime = time.time()
             (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB) = self.getStitchByOffset([imageA, imageB], offset, fuseMethod=fuseMethod)
             endTime = time.time()
-            self.printAndWrite("  The time of fusing is " + str(endTime - startTime) + "s")
             return (status, stitchImage)
 
     def gridStitch(self, fileList, filePosition, registrateMethod, fuseMethod, shootOrder="snakeByCol"):
@@ -175,6 +174,7 @@ class Stitcher:
         '''
         (imageA, imageB) = images
         offset = [0, 0]
+        status = False
         if  registrateMethod[0] == "phaseCorrection":
             return (False, "  We don't develop the phase Correction method, Plesae wait for updating")
         elif  registrateMethod[0] == "featureSearchWithIncrease":
@@ -191,7 +191,6 @@ class Stitcher:
                 maxI = int(imageA.shape[0] / (2 * roiFirstLength))
             for i in range(1, maxI+1):
                 # get the roi region of images
-                # print("  i is: " + str(i))
                 roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=i * roiFirstLength,
                                                   searchLengthForLarge=roiSecondLength)
                 roiImageB = self.getROIRegion(imageB, direction=direction, order="second", searchLength=i * roiFirstLength,
@@ -200,31 +199,24 @@ class Stitcher:
                 (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
                 (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
 
-                # ptsA = np.float32([kpsA[i] for (_, i) in matches])
-                # ptsB = np.float32([kpsB[i] for (i, _) in matches])
-                # # 计算视角变换矩阵
-                # (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 4.0)
-                # print("H:" + str(H.astype(np.int)))
-
-                # match all the feature points and return the list of offset
-                (dxArray, dyArray) = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
-                if direction == "horizontal":
-                        dyArray = dyArray + imageA.shape[1] - i * roiFirstLength
-                elif direction == "vertical":
-                        dxArray = dxArray + imageA.shape[0] - i * roiFirstLength
+                # match all the feature points
+                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
                 if offsetCaculate == "mode":
-                    localStartTime = time.time()
-                    (status, offset) = self.getOffsetByMode(dxArray, dyArray, evaluateNum=offsetEvaluate)
-                    localEndTime = time.time()
-                    if status == True:
-                        self.printAndWrite("  The time of registering is " + str(localEndTime - localStartTime) + "s")
+                    (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate)
                 elif offsetCaculate == "ransac":
-                    (status, offset) = self.getOffsetByRansac(dxArray, dyArray, evaluateNum=offsetEvaluate)
-                    # return (False, "  We don't develop the stitching with ransac method, Plesae wait for updating")
+                    (status, offset) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate)
+                # print(offset)
+                if direction == "horizontal":
+                    offset[1] = offset[1] + imageA.shape[1] - i * roiFirstLength
+                elif direction == "vertical":
+                    offset[0] = offset[0] + imageA.shape[0] - i * roiFirstLength
                 if status == True:
                     break
-        self.printAndWrite("  The offset of stitching: dx is "+ str(offset[0]) + " dy is " + str(offset[1]))
-        return (True, offset)
+        if status == False:
+            return (status, "  The two images can not match")
+        elif status == True:
+            self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
+            return (status, offset)
 
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域
@@ -304,49 +296,58 @@ class Stitcher:
             if len(m) == 2 and m[0].distance < m[1].distance * ratio:
                 # 存储两个点在featuresA, featuresB中的索引值
                 matches.append((m[0].trainIdx, m[0].queryIdx))
-        # self.printAndWrite("  The number of matching is " + str(len(matches)))
-        dxList = []; dyList = []
-        # # 获取输入图片及其搜索区域
-        # (imageA, imageB) = images
-        # (hA, wA) = imageA.shape[:2]
-        # (hB, wB) = imageB.shape[:2]
+        return matches
+        # # self.printAndWrite("  The number of matching is " + str(len(matches)))
+        # dxList = []; dyList = []
+        # # # 获取输入图片及其搜索区域
+        # # (imageA, imageB) = images
+        # # (hA, wA) = imageA.shape[:2]
+        # # (hB, wB) = imageB.shape[:2]
+
+    def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate=100):
+        totalStatus = True
+        if len(matches) < offsetEvaluate:
+            totalStatus = False
+            return (False, [0, 0])
+        dxList = []; dyList = [];
         for trainIdx, queryIdx in matches:
-            # ptA = (int(kpsA[queryIdx][1]), int(kpsA[queryIdx][0]))
-            # ptB = (int(kpsB[trainIdx][1]), int(kpsB[trainIdx][0]))
             ptA = (kpsA[queryIdx][1], kpsA[queryIdx][0])
             ptB = (kpsB[trainIdx][1], kpsB[trainIdx][0])
-            # if direction == "horizontal":
-            dxList.append(ptA[0] - ptB[0])
-            dyList.append(ptA[1] - ptB[1])
-            # elif direction == "vertical":
-            #     dx.append((hA - ptA[0]) + ptB[0])
-            #     dy.append(ptA[1] - ptB[1])
-        # print(np.array((np.array(dxList),np.array(dyList))).transpose())
-        return (np.array(dxList) ,np.array(dyList))
+            dxList.append(int(ptA[0] - ptB[0]))
+            dyList.append(int(ptA[1] - ptB[1]))
+        dxMode, count = mode(np.array(dxList), axis=None)
+        dyMode, count = mode(np.array(dyList), axis=None)
+        dx = int(dxMode); dy = int(dyMode)
+        return (True, [dx, dy])
 
-    def getOffsetByMode(self, dxArray, dyArray, evaluateNum=20):
-        if len(dxArray) < evaluateNum:
-            return (False, (0, 0))
-        else:
-            return (True, (int(mode(dxArray.astype(np.int), axis=None)[0]), int(mode(dyArray.astype(np.int), axis=None)[0])))
-
-    def getOffsetByRansac(self, dxArray, dyArray, evaluateNum=100):
-
-
-        data = np.column_stack([dxArray, dyArray])
-        model = skimage.measure.CircleModel
-        ransac_model, inliers = skimage.measure.ransac(data, model, 20, residual_threshold=1, max_trials=200)
-        dxRansac = []; dyRansac = []
-        matchNum = len(inliers)
-        if matchNum < evaluateNum:
-            return (False, (0, 0))
-        for i in range(0 , matchNum):
-            if inliers[i] == True:
-                dxRansac.append(data[i][0])
-                dyRansac.append(data[i][1])
-        # print(np.array(dxRansac))
+    def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
+        totalStatus = False
+        ptsA = np.float32([kpsA[i] for (_, i) in matches])
+        ptsB = np.float32([kpsB[i] for (i, _) in matches])
+        # 计算视角变换矩阵
+        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 4.0)
+        trueCount = 0
+        for i in range(0, len(status)):
+            if status[i] == True:
+                trueCount = trueCount + 1
+        if trueCount >= offsetEvaluate:
+            totalStatus = True
+        return (totalStatus ,[np.array(H).astype(np.int)[1,2] * (-1), np.array(H).astype(np.int)[0,2] * (-1)])
+        # return [H[1, 2], H(0, 2)]
+        # data = np.column_stack([dxArray, dyArray])
+        # model = skimage.measure.CircleModel
+        # ransac_model, inliers = skimage.measure.ransac(data, model, 20, residual_threshold=1, max_trials=200)
+        # dxRansac = []; dyRansac = []
+        # matchNum = len(inliers)
+        # if matchNum < evaluateNum:
+        #     return (False, (0, 0))
+        # for i in range(0 , matchNum):
+        #     if inliers[i] == True:
+        #         dxRansac.append(data[i][0])
+        #         dyRansac.append(data[i][1])
+        # # print(np.array(dxRansac))
         # print(np.array(dyRansac))
-        return (True, (int(mode(np.array(dxRansac).astype(int), axis=None)[0]), int(mode(np.array(dyRansac).astype(int), axis=None)[0])))
+        # return (True, (int(mode(np.array(dxRansac).astype(int), axis=None)[0]), int(mode(np.array(dyRansac).astype(int), axis=None)[0])))
 
     # def creatOffsetImage(self, image, direction, offset):
     #     h, w = image.shape[:2]
