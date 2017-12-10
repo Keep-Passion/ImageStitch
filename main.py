@@ -27,8 +27,8 @@ if __name__=="__main__":
 
     # Image stitching For Al11La3 By grid stitching
     projectAddress = ".\\images\\dendriticCrystal"
-    fileNum = 2
-    for i in range(1, fileNum):
+    fileNum = 4
+    for i in range(0, fileNum):
         outputAddress = "result\\dendriticCrystalNotFuse\\"
         fileAddress = projectAddress + "\\" + str(i + 1) + "\\"
         fileList = glob.glob(fileAddress + "*.jpg")
@@ -36,7 +36,7 @@ if __name__=="__main__":
         evaluate = (True, "evaluate.txt")
         isPrintLog = True
         stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
-        registrateMethod = ("featureSearchWithIncrease", "surf", 0.5, ("mode", 100), (150, -1))
+        registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 100), (150, -1))
         fuseMethod = ("notFuse", "Test")
         (status, result) = stitcher.gridStitch(fileList, filePosition, registrateMethod, fuseMethod, shootOrder="snakeByCol")
         if status == True:
