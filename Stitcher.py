@@ -172,11 +172,10 @@ class Stitcher:
             roiSecondLength = registrateMethod[4][1]    # roi length for stitching in second direction
 
             if direction == "horizontal":
-                maxI = int(imageA.shape[1] / (2 * roiFirstLength))
+                maxI = int(imageA.shape[1] / (2 * roiFirstLength)) + 1
             elif direction == "vertical":
-                maxI = int(imageA.shape[0] / (2 * roiFirstLength))
-            for i in range(1, maxI+2):
-                print("i="+str(i)+", maxI="+str(maxI+1))
+                maxI = int(imageA.shape[0] / (2 * roiFirstLength)) + 1
+            for i in range(1, maxI+1):
                 # get the roi region of images
                 roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=i * roiFirstLength,
                                                   searchLengthForLarge=roiSecondLength)
@@ -316,6 +315,8 @@ class Stitcher:
         totalStatus = False
         ptsA = np.float32([kpsA[i] for (_, i) in matches])
         ptsB = np.float32([kpsB[i] for (i, _) in matches])
+        if len(matches) == 0:
+            return (totalStatus, [0, 0])
         # 计算视角变换矩阵
         (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 4.0)
         trueCount = 0
@@ -324,7 +325,9 @@ class Stitcher:
                 trueCount = trueCount + 1
         if trueCount >= offsetEvaluate:
             totalStatus = True
-        return (totalStatus ,[np.array(H).astype(np.int)[1,2] * (-1), np.array(H).astype(np.int)[0,2] * (-1)])
+            return (totalStatus ,[np.array(H).astype(np.int)[1,2] * (-1), np.array(H).astype(np.int)[0,2] * (-1)])
+        else:
+            return (totalStatus, [0, 0])
         # return [H[1, 2], H(0, 2)]
         # data = np.column_stack([dxArray, dyArray])
         # model = skimage.measure.CircleModel

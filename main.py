@@ -10,13 +10,13 @@ def ironPariwiseStitch():
     for i in range(0, fileNum):
         fileAddress = projectAddress + "\\" + str(i + 1) + "\\"
         fileList = glob.glob(fileAddress + "*.jpg")
-        outputAddress = "result\\ironMinimum\\"
+        outputAddress = "result\\ironTrigonometric\\"
         evaluate = (True, "evaluate.txt")
         isPrintLog = True
         stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
-        registrateMethod = ("featureSearchWithIncrease", "orb", 0.6, ("mode", 50), (150, -1))
-        # registrateMethod = ("featureSearchWithIncrease", "orb", 0.6, ("ransac", 100), (150, -1))
-        fuseMethod = ("minimum", "Test")
+        # registrateMethod = ("featureSearchWithIncrease", "orb", 0.6, ("mode", 4), (150, -1))
+        registrateMethod = ("featureSearchWithIncrease", "orb", 0.6, ("ransac", 10), (150, -1))
+        fuseMethod = ("trigonometric", "Test")
 
         (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="vertical")
         if status == True:
@@ -51,5 +51,5 @@ def dendriticCrystalGridStitch():
             print("拼接失败")
 
 if __name__=="__main__":
-    # ironPariwiseStitch()
-    dendriticCrystalGridStitch()
+    ironPariwiseStitch()
+    # dendriticCrystalGridStitch()
