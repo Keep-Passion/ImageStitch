@@ -191,7 +191,9 @@ def fuseByOptimalSeamLine(images, direction="horizontal"):
     :return:融合后的图像
     '''
     (imageA, imageB) = images
-    cv2.imshow()
+    cv2.imshow("imageA", imageA)
+    cv2.imshow("imageB", imageB)
+    cv2.waitKey(0)
     value = caculateVaule(images)
     # print(value)
     mask = 1 - findOptimalSeamLine(value, direction)

@@ -7,16 +7,16 @@ def ironPariwiseStitch():
     # Image stitching For iron By pairwise stitching
     projectAddress = ".\\images\\iron"
     fileNum = 50
-    for i in range(12, fileNum):
+    for i in range(0, fileNum):
         fileAddress = projectAddress + "\\" + str(i + 1) + "\\"
         fileList = glob.glob(fileAddress + "*.jpg")
         outputAddress = "result\\ironOptimalSeamLine\\"
         evaluate = (True, "evaluate.txt")
         isPrintLog = True
         stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
-        registrateMethod = ("featureSearchWithIncrease", "orb", 0.6, ("mode", 20), (100, -1))
-        # registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("ransac", 10), (150, -1))
-        fuseMethod = ("optimalSeamLine", "Test")
+        # registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 20), (100, -1))
+        registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("ransac", 10), (150, -1))
+        fuseMethod = ("trigonometric", "Test")
 
         (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="vertical")
         if status == True:
