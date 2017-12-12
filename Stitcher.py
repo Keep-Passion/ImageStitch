@@ -5,6 +5,7 @@ import time
 import ImageFusion
 import os
 import skimage.measure
+from numba import jit
 
 class Stitcher:
     '''
@@ -21,6 +22,7 @@ class Stitcher:
         self.evaluateFile = evaluate[1]
         self.isPrintLog = isPrintLog
 
+    # @jit
     def printAndWrite(self, content):
         if self.isPrintLog:
             print(content)
@@ -30,6 +32,7 @@ class Stitcher:
             f.write("\n")
             f.close()
 
+    # @jit
     def pairwiseStitch(self, fileList, registrateMethod, fuseMethod, direction="horizontal"):
         self.printAndWrite("Stitching " + str(fileList[0]) + " and " + str(fileList[1]))
 
@@ -50,6 +53,7 @@ class Stitcher:
             self.printAndWrite("  The time of fusing is " + str(endTime - startTime) + "s")
             return (status, stitchImage)
 
+    # @jit
     def gridStitch(self, fileList, filePosition, registrateMethod, fuseMethod, shootOrder="snakeByCol"):
         largeBlockNum = len(filePosition)
         self.printAndWrite("Stitching the directory which have" + str(fileList[0]))
@@ -149,6 +153,7 @@ class Stitcher:
         self.printAndWrite("  The time of fusing is " + str(endTime - startTime) + "s")
         return (True, totalStitch)
 
+    # @jit
     def calculateOffset(self, images, registrateMethod, fuseMethod, direction="horizontal"):
         '''
         Stitch two images
@@ -176,6 +181,7 @@ class Stitcher:
             elif direction == "vertical":
                 maxI = int(imageA.shape[0] / (2 * roiFirstLength)) + 1
             for i in range(1, maxI+1):
+                self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI+1))
                 # get the roi region of images
                 roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=i * roiFirstLength,
                                                   searchLengthForLarge=roiSecondLength)
@@ -207,6 +213,7 @@ class Stitcher:
             self.printAndWrite("  The time of mode/ransac is " + str(localEndTime - localStartTime) + "s")
             return (status, offset)
 
+    # @jit
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域
         :param originalImage:需要裁剪的原始图像
@@ -242,6 +249,7 @@ class Stitcher:
                     roiRegion = image[0: searchLength, 0:searchLengthForLarge]
         return roiRegion
 
+    # @jit
     def detectAndDescribe(self, image, featureMethod):
         '''
     	计算图像的特征点集合，并返回该点集＆描述特征
@@ -267,6 +275,7 @@ class Stitcher:
         # 返回特征点集，及对应的描述特征
         return (kps, features)
 
+    # @jit
     def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
         '''
         匹配特征点
@@ -287,6 +296,7 @@ class Stitcher:
             if len(m) == 2 and m[0].distance < m[1].distance * ratio:
                 # 存储两个点在featuresA, featuresB中的索引值
                 matches.append((m[0].trainIdx, m[0].queryIdx))
+        self.printAndWrite("  The number of matches is " + str(len(matches)))
         return matches
         # # self.printAndWrite("  The number of matching is " + str(len(matches)))
         # dxList = []; dyList = []
@@ -295,6 +305,7 @@ class Stitcher:
         # # (hA, wA) = imageA.shape[:2]
         # # (hB, wB) = imageB.shape[:2]
 
+    # @jit
     def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate=100):
         totalStatus = True
         if len(matches) < offsetEvaluate:
@@ -311,6 +322,7 @@ class Stitcher:
         dx = int(dxMode); dy = int(dyMode)
         return (True, [dx, dy])
 
+    # @jit
     def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
         totalStatus = False
         ptsA = np.float32([kpsA[i] for (_, i) in matches])
@@ -359,6 +371,7 @@ class Stitcher:
     #             returnImage[:, (-1 * offset):w] = image[:, 0:w+offset]
     #     return returnImage
 
+    # @jit
     def getStitchByOffset(self, images, offset, fuseMethod):
         (imageA, imageB) = images
         (hA, wA) = imageA.shape[:2]
@@ -410,6 +423,7 @@ class Stitcher:
         stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
 
+    # @jit
     def fuseImage(self, images, fuseMethod, direction="horizontal"):
         (imageA, imageB) = images
         fuseRegion = np.zeros(imageA.shape, np.uint8)

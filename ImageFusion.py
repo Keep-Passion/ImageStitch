@@ -113,115 +113,10 @@ def fuseByTrigonometric(images, direction="horizontal"):
     fuseRegion = np.uint8((weightMatA * imageA.astype(np.int)) + (weightMatB * imageB.astype(np.int)))
     return fuseRegion
 
-def fuseByOptimalSeamLine(images, direction="horizontal"):
-    '''
-    基于最佳缝合线的融合方法
-    :param images:输入两个相同区域的图像
-    :param direction: 横向拼接还是纵向拼接
-    :return:融合后的图像
-    '''
-    (imageA, imageB) = images
-    value = caculateVaule(images)
-    # print(value)
-    mask = 1 - findOptimalSeamLine(value, direction)
-    # cv2.namedWindow("mask", 0)
-    cv2.imshow("mask", (mask*255).astype(np.uint8))
-    cv2.waitKey(0)
-    fuseRegion = imageA.copy()
-    fuseRegion[(1 - mask) == 0] = imageA[(1 - mask) == 0]
-    fuseRegion[(1 - mask) == 1] = imageB[(1 - mask) == 1]
-    drawFuseRegion = drawOptimalLine(1- mask, fuseRegion)
-    cv2.imwrite("optimalLine.jpg", drawFuseRegion)
-    cv2.imwrite("fuseRegion.jpg", BlendArbitrary(imageA,imageB, mask, 4))
-    return fuseRegion
-
 def fuseByMultiBandBlending(images):
     (imageA, imageB) = images
-    cv2.imshow("imageA", imageA)
-    cv2.imshow("imageB", imageB)
     imagesReturn = np.uint8(BlendArbitrary2(imageA, imageB, 4))
-    cv2.imshow("result", imagesReturn)
-    cv2.waitKey(0)
     return imagesReturn
-
-def caculateVaule(images):
-    (imageA, imageB) = images
-    row, col = imageA.shape[:2]
-    # value = np.zeros(imageA.shape, dtype=np.float32)
-    Ecolor = (imageA - imageB).astype(np.float32)
-    Sx = np.array([[-2, 0, 2],
-                   [-1, 0, 1],
-                   [-2, 0, 2]])
-    Sy = np.array([[-2, -1, -2],
-                   [ 0,  0,  0],
-                   [ 2,  1,  2]])
-    Egeometry = np.power(cv2.filter2D(Ecolor, -1, Sx), 2) + np.power(cv2.filter2D(Ecolor, -1, Sy), 2)
-
-    diff = np.abs(imageA - imageB) / np.maximum(imageA, imageB).max()
-    diffMax = np.amax(diff)
-
-    infinet = 10000
-    W = 10
-    for i in range(0, row):
-        for j in range(0, col):
-            if diff[i, j] < 0.7 * diffMax:
-                diff[i, j] = W * diff[i, j] / diffMax
-            else:
-                diff[i, j] = infinet
-    value = diff * (np.power(Ecolor, 2) + Egeometry)
-    return value
-
-def findOptimalSeamLine(value, direction="horizontal"):
-    if direction == "vertical":
-        value = np.transpose(value)
-    row, col = value.shape[:2]
-    indexMatrix = np.zeros(value.shape, dtype=np.int)
-    dpMatrix = np.zeros(value.shape, dtype=np.float32)
-    mask = np.zeros(value.shape, dtype=np.uint8)
-
-    dpMatrix[0, :] = value[0, :]
-    indexMatrix[0, :] = indexMatrix[0, :] - 1
-    for i in range(1, row):
-        for j in range(0, col):
-            if j == 0:
-                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).min()
-                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).argmin()
-                # print("last=" + str(np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]])))
-                # print("this=" + str(value[i, j]))
-                # print(dpMatrix[i, j])
-                # print(indexMatrix[i, j])
-            elif j == col - 1:
-                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[i, j]).min()
-                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[i, j]).argmin() - 1
-            else:
-                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).min()
-                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).argmin() - 1
-    print(indexMatrix)
-    # generate the mask
-    index = dpMatrix[row - 1, :].argmin()
-    # print("here" + str(dpMatrix[row - 1, :]))
-    # print(index)
-    for j in range(index, col):
-        mask[row-1, j] = 1
-    for i in range(row - 1, 1, -1):
-        index = indexMatrix[i, index] + index
-        # print(index)
-        for j in range(index, col):
-            mask[i-1, j] = 1
-    if direction == "vertical":
-        mask = np.transpose(mask)
-    return mask
-
-def drawOptimalLine(mask, fuseRegion):
-    row, col = mask.shape[:2]
-    drawing = np.zeros([row, col, 3], dtype=np.uint8)
-    drawing = cv2.cvtColor(fuseRegion, cv2.COLOR_GRAY2BGR)
-    for j in range(0, col):
-        for i in range(0, row):
-            if mask[i, j] == 1:
-                drawing[i, j] = np.array([0, 0, 255])
-                break
-    return drawing
 
 #带权拉普拉斯金字塔融合
 def BlendArbitrary(img1, img2, R, level):
@@ -286,3 +181,108 @@ def stretchImage(Region):
     maxI = Region.max()
     out = (Region - minI) / (maxI - minI) * 255
     return out
+
+# OptialSeamLine's method
+def fuseByOptimalSeamLine(images, direction="horizontal"):
+    '''
+    基于最佳缝合线的融合方法
+    :param images:输入两个相同区域的图像
+    :param direction: 横向拼接还是纵向拼接
+    :return:融合后的图像
+    '''
+    (imageA, imageB) = images
+    cv2.imshow()
+    value = caculateVaule(images)
+    # print(value)
+    mask = 1 - findOptimalSeamLine(value, direction)
+    # cv2.namedWindow("mask", 0)
+    # cv2.imshow("mask", (mask*255).astype(np.uint8))
+    # cv2.waitKey(0)
+    fuseRegion = imageA.copy()
+    fuseRegion[(1 - mask) == 0] = imageA[(1 - mask) == 0]
+    fuseRegion[(1 - mask) == 1] = imageB[(1 - mask) == 1]
+    drawFuseRegion = drawOptimalLine(1- mask, fuseRegion)
+    cv2.imwrite("optimalLine.jpg", drawFuseRegion)
+    cv2.imwrite("fuseRegion.jpg", np.uint8(BlendArbitrary(imageA,imageB, mask, 4)))
+    cv2.waitKey(0)
+    return np.uint8(BlendArbitrary(imageA,imageB, mask, 4))
+
+def caculateVaule(images):
+    (imageA, imageB) = images
+    row, col = imageA.shape[:2]
+    # value = np.zeros(imageA.shape, dtype=np.float32)
+    Ecolor = (imageA - imageB).astype(np.float32)
+    Sx = np.array([[-2, 0, 2],
+                   [-1, 0, 1],
+                   [-2, 0, 2]])
+    Sy = np.array([[-2, -1, -2],
+                   [ 0,  0,  0],
+                   [ 2,  1,  2]])
+    Egeometry = np.power(cv2.filter2D(Ecolor, -1, Sx), 2) + np.power(cv2.filter2D(Ecolor, -1, Sy), 2)
+
+    diff = np.abs(imageA - imageB) / np.maximum(imageA, imageB).max()
+    diffMax = np.amax(diff)
+
+    infinet = 10000
+    W = 10
+    for i in range(0, row):
+        for j in range(0, col):
+            if diff[i, j] < 0.7 * diffMax:
+                diff[i, j] = W * diff[i, j] / diffMax
+            else:
+                diff[i, j] = infinet
+    value = diff * (np.power(Ecolor, 2) + Egeometry)
+    return value
+
+def findOptimalSeamLine(value, direction="horizontal"):
+    if direction == "vertical":
+        value = np.transpose(value)
+    row, col = value.shape[:2]
+    indexMatrix = np.zeros(value.shape, dtype=np.int)
+    dpMatrix = np.zeros(value.shape, dtype=np.float32)
+    mask = np.zeros(value.shape, dtype=np.uint8)
+
+    dpMatrix[0, :] = value[0, :]
+    indexMatrix[0, :] = indexMatrix[0, :] - 1
+    for i in range(1, row):
+        for j in range(0, col):
+            if j == 0:
+                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).min()
+                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).argmin()
+                # print("last=" + str(np.array([dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]])))
+                # print("this=" + str(value[i, j]))
+                # print(dpMatrix[i, j])
+                # print(indexMatrix[i, j])
+            elif j == col - 1:
+                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[i, j]).min()
+                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[i, j]).argmin() - 1
+            else:
+                dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).min()
+                indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).argmin() - 1
+    # print(indexMatrix)
+    # generate the mask
+    index = dpMatrix[row - 1, :].argmin()
+    # print("here" + str(dpMatrix[row - 1, :]))
+    # print(index)
+    for j in range(index, col):
+        mask[row-1, j] = 1
+    for i in range(row - 1, 1, -1):
+        index = indexMatrix[i, index] + index
+        # print(index)
+        for j in range(index, col):
+            mask[i-1, j] = 1
+    if direction == "vertical":
+        mask = np.transpose(mask)
+    return mask
+
+def drawOptimalLine(mask, fuseRegion):
+    row, col = mask.shape[:2]
+    drawing = np.zeros([row, col, 3], dtype=np.uint8)
+    drawing = cv2.cvtColor(fuseRegion, cv2.COLOR_GRAY2BGR)
+    for j in range(0, col):
+        for i in range(0, row):
+            if mask[i, j] == 1:
+                drawing[i, j] = np.array([0, 0, 255])
+                break
+    return drawing
+
