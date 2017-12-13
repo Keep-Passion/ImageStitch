@@ -15,8 +15,8 @@ def ironPariwiseStitch():
         evaluate = (True, "evaluate.txt")
         isPrintLog = True
         stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
-        registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 30), (100, -1))
-        # registrateMethod = ("featureSearchWithIncrease", "surf", 0.75, ("ransac", 20), (100, -1))
+        # registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 30), (100, -1))
+        registrateMethod = ("featureSearchWithIncrease", "surf", 0.75, ("ransac", 20), (100, -1))
         fuseMethod = ("trigonometric", "Test")
 
         (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="vertical")

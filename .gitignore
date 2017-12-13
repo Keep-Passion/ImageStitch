@@ -3,3 +3,4 @@
 .idea/
 images/
 result/
+__pycache__/

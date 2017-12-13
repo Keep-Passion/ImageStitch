@@ -41,6 +41,8 @@ class Stitcher:
         (status, offset, H) = self.calculateOffset([imageA,imageB], registrateMethod, direction=direction)
         if registrateMethod[3][0] == "ransac":
             imageA = cv2.warpPerspective(imageA, H, (imageA.shape[1], imageA.shape[0]))
+            print("H")
+            print(H)
             (status, offset, H) = self.calculateOffset([imageA, imageB], registrateMethod,direction=direction)
             # print(H)
             # cv2.namedWindow("imageA",0)
@@ -109,8 +111,6 @@ class Stitcher:
                 offsetBlockList.append(offset)
         endTime = time.time()
         self.printAndWrite("  The time of registing is " + str(endTime - startTime) + "s")
-        # print(offsetList)
-        # print(offsetBlockList)
 
         # stitching and fusing
         # stiching One block
@@ -198,32 +198,18 @@ class Stitcher:
                 (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
                 (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
                 matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
-                ptsA = np.float32([kpsA[i] for (_, i) in matches]); ptsA[:, [0, 1]] = ptsA[:, [1, 0]];
-                ptsB = np.float32([kpsB[i] for (i, _) in matches]); ptsB[:, [0, 1]] = ptsB[:, [1, 0]];
 
-                if direction == "horizontal" :
-                    ptsA[:, 1] = ptsA[:, 1] + imageA.shape[1] - i * roiFirstLength
-                    ptsB[:, 1] = ptsB[:, 1] + ptsA[:, 1]
-                elif direction == "vertical":
-                    ptsA[:, 0] = ptsA[:, 0] + imageA.shape[0] - i * roiFirstLength
-                    ptsB[:, 0] = ptsB[:, 0] + ptsA[:, 0]
-                print("A")
-                print(ptsA)
-                print("B")
-                print(ptsB)
                 # match all the feature points
                 localStartTime = time.time()
-
                 if offsetCaculate == "mode":
                     (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate)
                 elif offsetCaculate == "ransac":
                     (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate)
                     H = adjustH
-                # print(offset)
-                # if direction == "horizontal":
-                #     offset[1] = offset[1] + imageA.shape[1] - i * roiFirstLength
-                # elif direction == "vertical":
-                #     offset[0] = offset[0] + imageA.shape[0] - i * roiFirstLength
+                if direction == "horizontal" and status == True:
+                    offset[1] = offset[1] + imageA.shape[1] - i * roiFirstLength
+                elif direction == "vertical" and status == True:
+                    offset[0] = offset[0] + imageA.shape[0] - i * roiFirstLength
                 if status == True:
                     break
         if status == False:
@@ -330,8 +316,8 @@ class Stitcher:
         for trainIdx, queryIdx in matches:
             ptA = (kpsA[queryIdx][1], kpsA[queryIdx][0])
             ptB = (kpsB[trainIdx][1], kpsB[trainIdx][0])
-            dxList.append(round(ptB[0] - ptA[0]))
-            dyList.append(round(ptB[1] - ptA[1]))
+            dxList.append(round(ptA[0] - ptB[0]))
+            dyList.append(round(ptA[1] - ptB[1]))
         dxMode, count = mode(np.array(dxList), axis=None)
         dyMode, count = mode(np.array(dyList), axis=None)
         dx = int(dxMode); dy = int(dyMode)
@@ -340,12 +326,12 @@ class Stitcher:
     # @jit
     def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
         totalStatus = False
-
+        ptsA = np.float32([kpsA[i] for (_, i) in matches])
+        ptsB = np.float32([kpsB[i] for (i, _) in matches])
         if len(matches) == 0:
             return (totalStatus, [0, 0], 0)
         # 计算视角变换矩阵
         (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
-        print(H)
         trueCount = 0
         for i in range(0, len(status)):
             if status[i] == True:
@@ -355,7 +341,7 @@ class Stitcher:
             adjustH = H.copy()
             adjustH[0, 2] = 0;adjustH[1, 2] = 0
             adjustH[2, 0] = 0;adjustH[2, 1] = 0
-            return (totalStatus ,[np.array(H).astype(np.int)[1,2] * (-1), np.array(H).astype(np.int)[0,2] * (-1)], adjustH)
+            return (totalStatus ,[np.round(np.array(H).astype(np.int)[1,2]) * (-1), np.round(np.array(H).astype(np.int)[0,2]) * (-1)], adjustH)
         else:
             return (totalStatus, [0, 0], 0)
 
