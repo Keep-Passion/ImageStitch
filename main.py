@@ -11,13 +11,13 @@ def ironPariwiseStitch():
     for i in range(0, fileNum):
         fileAddress = projectAddress + "\\" + str(i + 1) + "\\"
         fileList = glob.glob(fileAddress + "*.jpg")
-        outputAddress = "result\\ironTrigonometric\\"
+        outputAddress = "result\\ironNotFuse\\"
         evaluate = (True, "evaluate.txt")
         isPrintLog = True
         stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
         registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 30), (100, -1))
         # registrateMethod = ("featureSearchWithIncrease", "surf", 0.75, ("ransac", 20), (100, -1))
-        fuseMethod = ("notFuse", "Test")
+        fuseMethod = ("trigonometric", "Test")
 
         (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="vertical")
         if status == True:
@@ -45,8 +45,8 @@ def dendriticCrystalGridStitch():
         evaluate = (True, "evaluate.txt")
         isPrintLog = True
         stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
-        registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 10), (100, -1))
-        # registrateMethod = ("featureSearchWithIncrease", "orb", 0.5, ("ransac", 10), (100, -1))
+        # registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 10), (100, -1))
+        registrateMethod = ("featureSearchWithIncrease", "orb", 0.5, ("ransac", 10), (100, -1))
         fuseMethod = ("trigonometric", "Test")
         (status, result) = stitcher.gridStitch(fileList, filePosition, registrateMethod, fuseMethod, shootOrder="snakeByCol")
         if status == True:

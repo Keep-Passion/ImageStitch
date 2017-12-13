@@ -197,10 +197,12 @@ class Stitcher:
                 # get the feature points
                 (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
                 (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
-                if direction == "horizontal":
+                if direction == "horizontal" :
                     kpsA[:, 0] = kpsA[:, 0] + imageA.shape[1] - i * roiFirstLength
+                    kpsB[:, 0] = kpsB[:, 0] + imageA.shape[1]
                 elif direction == "vertical":
                     kpsA[:, 1] = kpsA[:, 1] + imageA.shape[0] - i * roiFirstLength
+                    kpsB[:, 1] = kpsB[:, 1] + imageA.shape[0]
                 # print("A")
                 # print(kpsA)
                 # print("B")
@@ -324,8 +326,8 @@ class Stitcher:
         for trainIdx, queryIdx in matches:
             ptA = (kpsA[queryIdx][1], kpsA[queryIdx][0])
             ptB = (kpsB[trainIdx][1], kpsB[trainIdx][0])
-            dxList.append(int(ptA[0] - ptB[0]))
-            dyList.append(int(ptA[1] - ptB[1]))
+            dxList.append(round(ptB[0] - ptA[0]))
+            dyList.append(round(ptB[1] - ptA[1]))
         dxMode, count = mode(np.array(dxList), axis=None)
         dyMode, count = mode(np.array(dyList), axis=None)
         dx = int(dxMode); dy = int(dyMode)
@@ -340,6 +342,7 @@ class Stitcher:
             return (totalStatus, [0, 0], 0)
         # 计算视角变换矩阵
         (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
+        print(H)
         trueCount = 0
         for i in range(0, len(status)):
             if status[i] == True:
