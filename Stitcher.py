@@ -22,7 +22,7 @@ class Stitcher:
         self.evaluateFile = evaluate[1]
         self.isPrintLog = isPrintLog
 
-    # @jit
+
     def printAndWrite(self, content):
         if self.isPrintLog:
             print(content)
@@ -197,19 +197,23 @@ class Stitcher:
                 # get the feature points
                 (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
                 (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
+                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
+                ptsA = np.float32([kpsA[i] for (_, i) in matches]); ptsA[:, [0, 1]] = ptsA[:, [1, 0]];
+                ptsB = np.float32([kpsB[i] for (i, _) in matches]); ptsB[:, [0, 1]] = ptsB[:, [1, 0]];
+
                 if direction == "horizontal" :
-                    kpsA[:, 0] = kpsA[:, 0] + imageA.shape[1] - i * roiFirstLength
-                    kpsB[:, 0] = kpsB[:, 0] + imageA.shape[1]
+                    ptsA[:, 1] = ptsA[:, 1] + imageA.shape[1] - i * roiFirstLength
+                    ptsB[:, 1] = ptsB[:, 1] + ptsA[:, 1]
                 elif direction == "vertical":
-                    kpsA[:, 1] = kpsA[:, 1] + imageA.shape[0] - i * roiFirstLength
-                    kpsB[:, 1] = kpsB[:, 1] + imageA.shape[0]
-                # print("A")
-                # print(kpsA)
-                # print("B")
-                # print(kpsB)
+                    ptsA[:, 0] = ptsA[:, 0] + imageA.shape[0] - i * roiFirstLength
+                    ptsB[:, 0] = ptsB[:, 0] + ptsA[:, 0]
+                print("A")
+                print(ptsA)
+                print("B")
+                print(ptsB)
                 # match all the feature points
                 localStartTime = time.time()
-                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
+
                 if offsetCaculate == "mode":
                     (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate)
                 elif offsetCaculate == "ransac":
@@ -336,8 +340,7 @@ class Stitcher:
     # @jit
     def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
         totalStatus = False
-        ptsA = np.float32([kpsA[i] for (_, i) in matches])
-        ptsB = np.float32([kpsB[i] for (i, _) in matches])
+
         if len(matches) == 0:
             return (totalStatus, [0, 0], 0)
         # 计算视角变换矩阵
