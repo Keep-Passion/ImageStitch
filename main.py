@@ -2,6 +2,7 @@ import Stitcher
 import numpy as np
 import cv2
 import glob
+from numba import jit
 
 def ironPariwiseStitch():
     # Image stitching For iron By pairwise stitching
@@ -10,13 +11,13 @@ def ironPariwiseStitch():
     for i in range(0, fileNum):
         fileAddress = projectAddress + "\\" + str(i + 1) + "\\"
         fileList = glob.glob(fileAddress + "*.jpg")
-        outputAddress = "result\\ironOptimalSeamLine\\"
+        outputAddress = "result\\ironTrigonometric\\"
         evaluate = (True, "evaluate.txt")
         isPrintLog = True
         stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
-        # registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 20), (100, -1))
-        registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("ransac", 10), (150, -1))
-        fuseMethod = ("trigonometric", "Test")
+        registrateMethod = ("featureSearchWithIncrease", "surf", 0.6, ("mode", 30), (100, -1))
+        # registrateMethod = ("featureSearchWithIncrease", "surf", 0.75, ("ransac", 20), (100, -1))
+        fuseMethod = ("notFuse", "Test")
 
         (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="vertical")
         if status == True:

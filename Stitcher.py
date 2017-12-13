@@ -32,14 +32,20 @@ class Stitcher:
             f.write("\n")
             f.close()
 
-    # @jit
     def pairwiseStitch(self, fileList, registrateMethod, fuseMethod, direction="horizontal"):
         self.printAndWrite("Stitching " + str(fileList[0]) + " and " + str(fileList[1]))
 
         imageA = cv2.imread(fileList[0], 0)
         imageB = cv2.imread(fileList[1], 0)
         startTime = time.time()
-        (status, offset) = self.calculateOffset([imageA,imageB], registrateMethod, fuseMethod, direction=direction)
+        (status, offset, H) = self.calculateOffset([imageA,imageB], registrateMethod, direction=direction)
+        if registrateMethod[3][0] == "ransac":
+            imageA = cv2.warpPerspective(imageA, H, (imageA.shape[1], imageA.shape[0]))
+            (status, offset, H) = self.calculateOffset([imageA, imageB], registrateMethod,direction=direction)
+            # print(H)
+            # cv2.namedWindow("imageA",0)
+            # cv2.imshow("imageA", imageA)
+            # cv2.waitKey(0)
         endTime = time.time()
 
         if status == False:
@@ -71,9 +77,9 @@ class Stitcher:
                 imageA = cv2.imread(fileList[fileIndex - 1], 0)
                 imageB = cv2.imread(fileList[fileIndex + indexCrement - 1], 0)
                 if shootOrder == "snakeByCol":
-                    (status, offset) = self.calculateOffset([imageA, imageB], registrateMethod, fuseMethod, direction="vertical")
+                    (status, offset, H) = self.calculateOffset([imageA, imageB], registrateMethod, direction="vertical")
                 elif shootOrder == "snakeByRow":
-                    (status, offset) = self.calculateOffset([imageA, imageB], registrateMethod, fuseMethod, direction="horizontal")
+                    (status, offset, H) = self.calculateOffset([imageA, imageB], registrateMethod, direction="horizontal")
                 if status == False:
                     return (False, "  " + str(fileList[fileIndex - 1]) + " and "+ str(fileList[fileIndex + indexCrement - 1]) + str(offset))
                 else:
@@ -92,10 +98,10 @@ class Stitcher:
             imageA = cv2.imread(fileList[indexA - 1], 0)
             imageB = cv2.imread(fileList[indexB - 1], 0)
             if shootOrder == "snakeByCol":
-                (status, offset) = self.calculateOffset([imageA, imageB], registrateMethod, fuseMethod,
+                (status, offset, H) = self.calculateOffset([imageA, imageB], registrateMethod,
                                                            direction="horizontal")
             elif shootOrder == "snakeByRow":
-                (status, offset) = self.calculateOffset([imageA, imageB], registrateMethod, fuseMethod,
+                (status, offset, H) = self.calculateOffset([imageA, imageB], registrateMethod,
                                                         direction="vertial")
             if status == False:
                 return (False, "  Stitching the large block " + str(fileList[indexA - 1]) + " and "+ str(fileList[indexB - 1]) + str(offset))
@@ -154,7 +160,7 @@ class Stitcher:
         return (True, totalStitch)
 
     # @jit
-    def calculateOffset(self, images, registrateMethod, fuseMethod, direction="horizontal"):
+    def calculateOffset(self, images, registrateMethod, direction="horizontal"):
         '''
         Stitch two images
         :param images: [imageA, imageB]
@@ -166,8 +172,9 @@ class Stitcher:
         (imageA, imageB) = images
         offset = [0, 0]
         status = False
+        H = np.eye(3, dtype=np.float64)
         if  registrateMethod[0] == "phaseCorrection":
-            return (False, "  We don't develop the phase Correction method, Plesae wait for updating")
+            return (False, "  We don't develop the phase Correction method, Plesae wait for updating", 0)
         elif  registrateMethod[0] == "featureSearchWithIncrease":
             featureMethod = registrateMethod[1]        # "sift","surf" or "orb"
             searchRatio = registrateMethod[2]          # 0.75 is common value for matches
@@ -190,28 +197,36 @@ class Stitcher:
                 # get the feature points
                 (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
                 (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
-
+                if direction == "horizontal":
+                    kpsA[:, 0] = kpsA[:, 0] + imageA.shape[1] - i * roiFirstLength
+                elif direction == "vertical":
+                    kpsA[:, 1] = kpsA[:, 1] + imageA.shape[0] - i * roiFirstLength
+                # print("A")
+                # print(kpsA)
+                # print("B")
+                # print(kpsB)
                 # match all the feature points
                 localStartTime = time.time()
                 matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
                 if offsetCaculate == "mode":
                     (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate)
                 elif offsetCaculate == "ransac":
-                    (status, offset) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate)
+                    (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate)
+                    H = adjustH
                 # print(offset)
-                if direction == "horizontal":
-                    offset[1] = offset[1] + imageA.shape[1] - i * roiFirstLength
-                elif direction == "vertical":
-                    offset[0] = offset[0] + imageA.shape[0] - i * roiFirstLength
+                # if direction == "horizontal":
+                #     offset[1] = offset[1] + imageA.shape[1] - i * roiFirstLength
+                # elif direction == "vertical":
+                #     offset[0] = offset[0] + imageA.shape[0] - i * roiFirstLength
                 if status == True:
                     break
         if status == False:
-            return (status, "  The two images can not match")
+            return (status, "  The two images can not match", 0)
         elif status == True:
             localEndTime = time.time()
             self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
             self.printAndWrite("  The time of mode/ransac is " + str(localEndTime - localStartTime) + "s")
-            return (status, offset)
+            return (status, offset, H)
 
     # @jit
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
@@ -298,12 +313,6 @@ class Stitcher:
                 matches.append((m[0].trainIdx, m[0].queryIdx))
         self.printAndWrite("  The number of matches is " + str(len(matches)))
         return matches
-        # # self.printAndWrite("  The number of matching is " + str(len(matches)))
-        # dxList = []; dyList = []
-        # # # 获取输入图片及其搜索区域
-        # # (imageA, imageB) = images
-        # # (hA, wA) = imageA.shape[:2]
-        # # (hB, wB) = imageB.shape[:2]
 
     # @jit
     def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate=100):
@@ -328,48 +337,21 @@ class Stitcher:
         ptsA = np.float32([kpsA[i] for (_, i) in matches])
         ptsB = np.float32([kpsB[i] for (i, _) in matches])
         if len(matches) == 0:
-            return (totalStatus, [0, 0])
+            return (totalStatus, [0, 0], 0)
         # 计算视角变换矩阵
-        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 4.0)
+        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
         trueCount = 0
         for i in range(0, len(status)):
             if status[i] == True:
                 trueCount = trueCount + 1
         if trueCount >= offsetEvaluate:
             totalStatus = True
-            return (totalStatus ,[np.array(H).astype(np.int)[1,2] * (-1), np.array(H).astype(np.int)[0,2] * (-1)])
+            adjustH = H.copy()
+            adjustH[0, 2] = 0;adjustH[1, 2] = 0
+            adjustH[2, 0] = 0;adjustH[2, 1] = 0
+            return (totalStatus ,[np.array(H).astype(np.int)[1,2] * (-1), np.array(H).astype(np.int)[0,2] * (-1)], adjustH)
         else:
-            return (totalStatus, [0, 0])
-        # return [H[1, 2], H(0, 2)]
-        # data = np.column_stack([dxArray, dyArray])
-        # model = skimage.measure.CircleModel
-        # ransac_model, inliers = skimage.measure.ransac(data, model, 20, residual_threshold=1, max_trials=200)
-        # dxRansac = []; dyRansac = []
-        # matchNum = len(inliers)
-        # if matchNum < evaluateNum:
-        #     return (False, (0, 0))
-        # for i in range(0 , matchNum):
-        #     if inliers[i] == True:
-        #         dxRansac.append(data[i][0])
-        #         dyRansac.append(data[i][1])
-        # # print(np.array(dxRansac))
-        # print(np.array(dyRansac))
-        # return (True, (int(mode(np.array(dxRansac).astype(int), axis=None)[0]), int(mode(np.array(dyRansac).astype(int), axis=None)[0])))
-
-    # def creatOffsetImage(self, image, direction, offset):
-    #     h, w = image.shape[:2]
-    #     returnImage = np.zeros(image.shape,dtype=np.uint8)
-    #     if direction == "horizontal":
-    #         if offset >= 0:
-    #             returnImage[0:h-offset,:] = image[offset: h, :]
-    #         elif offset < 0:
-    #             returnImage[(-1 * offset):h, :] = image[0:h+offset,:]
-    #     elif direction == "vertical":
-    #         if offset >= 0:
-    #             returnImage[:, 0:w-offset] = image[:, offset:w]
-    #         elif offset < 0:
-    #             returnImage[:, (-1 * offset):w] = image[:, 0:w+offset]
-    #     return returnImage
+            return (totalStatus, [0, 0], 0)
 
     # @jit
     def getStitchByOffset(self, images, offset, fuseMethod):
