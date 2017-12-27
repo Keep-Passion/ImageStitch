@@ -54,6 +54,33 @@ def dendriticCrystalGridStitch():
         if status == False:
             print("拼接失败")
 
+def highTemperatureBlade():
+    # Image stitching For highTemperatureBlade By grid stitching
+    projectAddress = ".\\images\\highTemperatureBlade"
+    fileNum = 1
+    filePositionList = []
+    for i in range(0, fileNum):
+        filePosition = [[1, 7]]
+        filePositionList.append(filePosition)
+
+    for i in range(0, fileNum):
+        outputAddress = "result\\highTemperatureBladeTrigonometric\\"
+        fileAddress = projectAddress + "\\" + str(i + 1) + "\\"
+        fileList = glob.glob(fileAddress + "*.jpg")
+        filePosition = filePositionList[i]
+        evaluate = (True, "evaluate.txt")
+        isPrintLog = True
+        stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
+        registrateMethod = ("featureSearchWithIncrease", "sift", 0.65, ("mode", 3), (150, -1))
+        # registrateMethod = ("featureSearchWithIncrease", "sift", 0.5, ("ransac", 5), (100, -1))
+        fuseMethod = ("notFuse", "Test")
+        (status, result) = stitcher.gridStitch(fileList, filePosition, registrateMethod, fuseMethod, shootOrder="snakeByCol")
+        if status == True:
+            cv2.imwrite(outputAddress + "\\stitching_result_" + str(i + 1) + ".jpg", result)
+        if status == False:
+            print("拼接失败")
+
 if __name__=="__main__":
-    ironPariwiseStitch()
+    # ironPariwiseStitch()
     # dendriticCrystalGridStitch()
+    highTemperatureBlade()

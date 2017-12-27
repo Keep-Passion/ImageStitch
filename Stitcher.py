@@ -22,7 +22,6 @@ class Stitcher:
         self.evaluateFile = evaluate[1]
         self.isPrintLog = isPrintLog
 
-
     def printAndWrite(self, content):
         if self.isPrintLog:
             print(content)
@@ -39,15 +38,15 @@ class Stitcher:
         imageB = cv2.imread(fileList[1], 0)
         startTime = time.time()
         (status, offset, H) = self.calculateOffset([imageA,imageB], registrateMethod, direction=direction)
-        if registrateMethod[3][0] == "ransac":
-            imageA = cv2.warpPerspective(imageA, H, (imageA.shape[1], imageA.shape[0]))
-            print("H")
-            print(H)
-            (status, offset, H) = self.calculateOffset([imageA, imageB], registrateMethod,direction=direction)
-            # print(H)
-            # cv2.namedWindow("imageA",0)
-            # cv2.imshow("imageA", imageA)
-            # cv2.waitKey(0)
+        # if registrateMethod[3][0] == "ransac":
+        #     imageA = cv2.warpPerspective(imageA, H, (imageA.shape[1], imageA.shape[0]))
+        #     print("H")
+        #     print(H)
+        #     (status, offset, H) = self.calculateOffset([imageA, imageB], registrateMethod,direction=direction)
+        #     # print(H)
+        #     # cv2.namedWindow("imageA",0)
+        #     # cv2.imshow("imageA", imageA)
+        #     # cv2.waitKey(0)
         endTime = time.time()
 
         if status == False:
@@ -331,6 +330,9 @@ class Stitcher:
         if len(matches) == 0:
             return (totalStatus, [0, 0], 0)
         # 计算视角变换矩阵
+        # H1 = cv2.getAffineTransform(ptsA, ptsB)
+        # print("H1")
+        # print(H1)
         (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
         trueCount = 0
         for i in range(0, len(status)):
@@ -420,6 +422,7 @@ class Stitcher:
         elif fuseMethod[0] == "optimalSeamLine":
             fuseRegion = ImageFusion.fuseByOptimalSeamLine(images, direction)
         return fuseRegion
+
 
 if __name__=="__main__":
     # fileList = [".\\images\\dendriticCrystal\\2\\2-030.jpg", ".\\images\\dendriticCrystal\\2\\2-031.jpg"]
