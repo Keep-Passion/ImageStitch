@@ -1,3 +1,5 @@
+
+
 class Method():
     outputAddress = "result/"
     isEvaluate = False
@@ -6,13 +8,13 @@ class Method():
     isParallel = False
     isNGPUWork = False
 
-    def __init__(self, outputAddress, isEvaluate, evaluateFile, isPrintLog, isParallel, isNGPUWork):
-        self.outputAddress = outputAddress
-        self.isEvaluate = isEvaluate
-        self.evaluateFile = evaluateFile
-        self.isPrintLog = isPrintLog
-        self.isParallel = isParallel
-        self.isNGPUWork = isNGPUWork
+    # def __init__(self, outputAddress, isEvaluate, evaluateFile, isPrintLog, isParallel, isNGPUWork):
+    #     self.outputAddress = outputAddress
+    #     self.isEvaluate = isEvaluate
+    #     self.evaluateFile = evaluateFile
+    #     self.isPrintLog = isPrintLog
+    #     self.isParallel = isParallel
+    #     self.isNGPUWork = isNGPUWork
 
     def printAndWrite(self, content):
         if self.isPrintLog:

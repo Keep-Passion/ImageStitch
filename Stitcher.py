@@ -2,34 +2,17 @@
 import cv2
 from scipy.stats import mode
 import time
-import ImageFusion
 import os
 import skimage.measure
 from numba import jit
+import ImageUtility as Utility
+import ImageFusion
 
-class Stitcher:
+class Stitcher(Utility.Method):
     '''
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
 	'''
-    outputAddress = "result/"
-    isEvaluate = False
-    evaluateFile = "evaluate.txt"
-    isPrintLog = False
-
-    def __init__(self, outputAddress, evaluate, isPrintLog):
-        self.outputAddress = outputAddress
-        self.isEvaluate = evaluate[0]
-        self.evaluateFile = evaluate[1]
-        self.isPrintLog = isPrintLog
-
-    def printAndWrite(self, content):
-        if self.isPrintLog:
-            print(content)
-        if self.isEvaluate:
-            f = open(self.outputAddress + self.evaluateFile, "a")
-            f.write(content)
-            f.write("\n")
-            f.close()
+    direction = 1
 
     def pairwiseStitch(self, fileList, registrateMethod, fuseMethod, direction="horizontal"):
         self.printAndWrite("Stitching " + str(fileList[0]) + " and " + str(fileList[1]))
@@ -60,7 +43,7 @@ class Stitcher:
             self.printAndWrite("  The time of fusing is " + str(endTime - startTime) + "s")
             return (status, stitchImage)
 
-    # @jit
+
     def gridStitch(self, fileList, filePosition, registrateMethod, fuseMethod, shootOrder="snakeByCol"):
         largeBlockNum = len(filePosition)
         self.printAndWrite("Stitching the directory which have" + str(fileList[0]))
@@ -158,7 +141,8 @@ class Stitcher:
         self.printAndWrite("  The time of fusing is " + str(endTime - startTime) + "s")
         return (True, totalStitch)
 
-    # @jit
+
+
     def calculateOffset(self, images, registrateMethod, direction="horizontal"):
         '''
         Stitch two images
@@ -219,7 +203,7 @@ class Stitcher:
             self.printAndWrite("  The time of mode/ransac is " + str(localEndTime - localStartTime) + "s")
             return (status, offset, H)
 
-    # @jit
+
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域
         :param originalImage:需要裁剪的原始图像
@@ -231,7 +215,7 @@ class Stitcher:
         :type searchLength: np.int
         '''
         row, col = image.shape[:2]
-        if direction == "horizontal":
+        if direction == "horizontal" or direction == 2:
             if order == "first":
                 if searchLengthForLarge == -1:
                     roiRegion = image[:, col - searchLength:col]
@@ -242,7 +226,7 @@ class Stitcher:
                     roiRegion = image[:, 0: searchLength]
                 elif searchLengthForLarge > 0:
                     roiRegion = image[0:searchLengthForLarge, 0: searchLength]
-        elif direction == "vertical":
+        elif direction == "vertical" or direction == 1:
             if order == "first":
                 if searchLengthForLarge == -1:
                     roiRegion = image[row - searchLength:row, :]
@@ -253,18 +237,18 @@ class Stitcher:
                     roiRegion = image[0: searchLength, :]
                 elif searchLengthForLarge > 0:
                     roiRegion = image[0: searchLength, 0:searchLengthForLarge]
+        elif direction == 3：
+            pass
+        elif direction == 4:
+            pass
         return roiRegion
 
-    # @jit
     def detectAndDescribe(self, image, featureMethod):
         '''
     	计算图像的特征点集合，并返回该点集＆描述特征
     	:param image:需要分析的图像
     	:return:返回特征点集，及对应的描述特征
     	'''
-        # 将彩色图片转换成灰度图
-        # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
         # 建立SIFT生成器
         if featureMethod == "sift":
             descriptor = cv2.xfeatures2d.SIFT_create()
@@ -272,6 +256,7 @@ class Stitcher:
             descriptor = cv2.xfeatures2d.SURF_create()
         elif featureMethod == "orb":
             descriptor = cv2.ORB_create(5000000)
+
         # 检测SIFT特征点，并计算描述子
         (kps, features) = descriptor.detectAndCompute(image, None)
 
@@ -281,7 +266,6 @@ class Stitcher:
         # 返回特征点集，及对应的描述特征
         return (kps, features)
 
-    # @jit
     def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
         '''
         匹配特征点
@@ -305,7 +289,6 @@ class Stitcher:
         self.printAndWrite("  The number of matches is " + str(len(matches)))
         return matches
 
-    # @jit
     def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate=100):
         totalStatus = True
         if len(matches) < offsetEvaluate:
@@ -322,7 +305,6 @@ class Stitcher:
         dx = int(dxMode); dy = int(dyMode)
         return (True, [dx, dy])
 
-    # @jit
     def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
         totalStatus = False
         ptsA = np.float32([kpsA[i] for (_, i) in matches])
@@ -347,7 +329,6 @@ class Stitcher:
         else:
             return (totalStatus, [0, 0], 0)
 
-    # @jit
     def getStitchByOffset(self, images, offset, fuseMethod):
         (imageA, imageB) = images
         (hA, wA) = imageA.shape[:2]
@@ -399,30 +380,35 @@ class Stitcher:
         stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
 
-    # @jit
     def fuseImage(self, images, fuseMethod, direction="horizontal"):
         (imageA, imageB) = images
         fuseRegion = np.zeros(imageA.shape, np.uint8)
         imageA[imageA == 0] = imageB[imageA == 0]
         imageB[imageB == 0] = imageA[imageB == 0]
+        imageFusion = ImageFusion.ImageFusion()
         if fuseMethod[0] == "notFuse":
             fuseRegion = imageB
         elif fuseMethod[0] == "average":
-            fuseRegion = ImageFusion.fuseByAverage(images)
+            fuseRegion = imageFusion.fuseByAverage(images)
         elif fuseMethod[0] == "maximum":
-            fuseRegion = ImageFusion.fuseByMaximum(images)
+            fuseRegion = imageFusion.fuseByMaximum(images)
         elif fuseMethod[0] == "minimum":
-            fuseRegion = ImageFusion.fuseByMinimum(images)
+            fuseRegion = imageFusion.fuseByMinimum(images)
         elif fuseMethod[0] == "fadeInAndFadeOut":
-            fuseRegion = ImageFusion.fuseByFadeInAndFadeOut(images,direction)
+            fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images,direction)
         elif fuseMethod[0] == "multiBandBlending":
-            fuseRegion = ImageFusion.fuseByMultiBandBlending(images)
+            fuseRegion = imageFusion.fuseByMultiBandBlending(images)
         elif fuseMethod[0] == "trigonometric":
-            fuseRegion = ImageFusion.fuseByTrigonometric(images,direction)
+            fuseRegion = imageFusion.fuseByTrigonometric(images,direction)
         elif fuseMethod[0] == "optimalSeamLine":
-            fuseRegion = ImageFusion.fuseByOptimalSeamLine(images, direction)
+            fuseRegion = imageFusion.fuseByOptimalSeamLine(images, direction)
         return fuseRegion
 
+    def directionIncrease(self, direction):
+        direction = direction + 1
+        if direction == 4:
+            direction = 1
+        return direction
 
 if __name__=="__main__":
     # fileList = [".\\images\\dendriticCrystal\\2\\2-030.jpg", ".\\images\\dendriticCrystal\\2\\2-031.jpg"]

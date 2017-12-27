@@ -70,7 +70,7 @@ def highTemperatureBlade():
         filePosition = filePositionList[i]
         evaluate = (True, "evaluate.txt")
         isPrintLog = True
-        stitcher = Stitcher.Stitcher(outputAddress, evaluate, isPrintLog)
+        stitcher = Stitcher.Stitcher()
         registrateMethod = ("featureSearchWithIncrease", "sift", 0.65, ("mode", 3), (150, -1))
         # registrateMethod = ("featureSearchWithIncrease", "sift", 0.5, ("ransac", 5), (100, -1))
         fuseMethod = ("notFuse", "Test")
