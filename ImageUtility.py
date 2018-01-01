@@ -1,10 +1,8 @@
-
-
 class Method():
     outputAddress = "result/"
-    isEvaluate = False
+    isEvaluate = True
     evaluateFile = "evaluate.txt"
-    isPrintLog = False
+    isPrintLog = True
     isParallel = False
     isNGPUWork = False
 

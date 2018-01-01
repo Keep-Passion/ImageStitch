@@ -13,6 +13,15 @@ class Stitcher(Utility.Method):
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
 	'''
     direction = 1
+    featureMethod = "surf"  # "sift","surf" or "orb"
+    searchRatio = 0.75  # 0.75 is common value for matches
+    offsetCaculate = "mode"  # "mode" or "ransac"
+    offsetEvaluate = 10  # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
+    roiRatio = 0.1  # roi length for stitching in first direction
+    fuseMethod = "notFuse"
+    clipLimit = 2
+    tileSize = 10
+
 
     def pairwiseStitch(self, fileList, registrateMethod, fuseMethod, direction="horizontal"):
         self.printAndWrite("Stitching " + str(fileList[0]) + " and " + str(fileList[1]))
@@ -142,7 +151,6 @@ class Stitcher(Utility.Method):
         return (True, totalStitch)
 
 
-
     def calculateOffset(self, images, registrateMethod, direction="horizontal"):
         '''
         Stitch two images
@@ -203,7 +211,6 @@ class Stitcher(Utility.Method):
             self.printAndWrite("  The time of mode/ransac is " + str(localEndTime - localStartTime) + "s")
             return (status, offset, H)
 
-
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域
         :param originalImage:需要裁剪的原始图像
@@ -237,11 +244,34 @@ class Stitcher(Utility.Method):
                     roiRegion = image[0: searchLength, :]
                 elif searchLengthForLarge > 0:
                     roiRegion = image[0: searchLength, 0:searchLengthForLarge]
-        elif direction == 3：
-            pass
-        elif direction == 4:
-            pass
-        return roiRegion
+
+
+    def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
+        totalStatus = False
+        ptsA = np.float32([kpsA[i] for (_, i) in matches])
+        ptsB = np.float32([kpsB[i] for (i, _) in matches])
+        if len(matches) == 0:
+            return (totalStatus, [0, 0], 0)
+        # 计算视角变换矩阵
+        # H1 = cv2.getAffineTransform(ptsA, ptsB)
+        # print("H1")
+        # print(H1)
+        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
+        trueCount = 0
+        for i in range(0, len(status)):
+            if status[i] == True:
+                trueCount = trueCount + 1
+        if trueCount >= offsetEvaluate:
+            totalStatus = True
+            adjustH = H.copy()
+            adjustH[0, 2] = 0;adjustH[1, 2] = 0
+            adjustH[2, 0] = 0;adjustH[2, 1] = 0
+            return (totalStatus ,[np.round(np.array(H).astype(np.int)[1,2]) * (-1), np.round(np.array(H).astype(np.int)[0,2]) * (-1)], adjustH)
+        else:
+            return (totalStatus, [0, 0], 0)
+
+
+
 
     def detectAndDescribe(self, image, featureMethod):
         '''
@@ -289,47 +319,32 @@ class Stitcher(Utility.Method):
         self.printAndWrite("  The number of matches is " + str(len(matches)))
         return matches
 
-    def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate=100):
+    def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate = 10):
         totalStatus = True
-        if len(matches) < offsetEvaluate:
+        if len(matches) == 0:
             totalStatus = False
-            return (False, [0, 0])
+            return (totalStatus, [0, 0])
         dxList = []; dyList = [];
         for trainIdx, queryIdx in matches:
             ptA = (kpsA[queryIdx][1], kpsA[queryIdx][0])
             ptB = (kpsB[trainIdx][1], kpsB[trainIdx][0])
-            dxList.append(round(ptA[0] - ptB[0]))
-            dyList.append(round(ptA[1] - ptB[1]))
+            dxList.append(int(round(ptA[0] - ptB[0])))
+            dyList.append(int(round(ptA[1] - ptB[1])))
         dxMode, count = mode(np.array(dxList), axis=None)
         dyMode, count = mode(np.array(dyList), axis=None)
         dx = int(dxMode); dy = int(dyMode)
-        return (True, [dx, dy])
+        # Evaluate
+        maxNum = len(dxList)
+        num = 0
+        for i in range(0, maxNum):
+            if dxList[i] == dx and dyList[i] == dy:
+                num += 1
+        if num < offsetEvaluate:
+            totalStatus = False
+        self.printAndWrite("  In Mode, The number of num is " + str(num) + " and the number of offsetEvaluate is "+str(offsetEvaluate))
+        return (totalStatus, [dx, dy])
 
-    def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
-        totalStatus = False
-        ptsA = np.float32([kpsA[i] for (_, i) in matches])
-        ptsB = np.float32([kpsB[i] for (i, _) in matches])
-        if len(matches) == 0:
-            return (totalStatus, [0, 0], 0)
-        # 计算视角变换矩阵
-        # H1 = cv2.getAffineTransform(ptsA, ptsB)
-        # print("H1")
-        # print(H1)
-        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
-        trueCount = 0
-        for i in range(0, len(status)):
-            if status[i] == True:
-                trueCount = trueCount + 1
-        if trueCount >= offsetEvaluate:
-            totalStatus = True
-            adjustH = H.copy()
-            adjustH[0, 2] = 0;adjustH[1, 2] = 0
-            adjustH[2, 0] = 0;adjustH[2, 1] = 0
-            return (totalStatus ,[np.round(np.array(H).astype(np.int)[1,2]) * (-1), np.round(np.array(H).astype(np.int)[0,2]) * (-1)], adjustH)
-        else:
-            return (totalStatus, [0, 0], 0)
-
-    def getStitchByOffset(self, images, offset, fuseMethod):
+    def getStitchByOffset(self, images, offset):
         (imageA, imageB) = images
         (hA, wA) = imageA.shape[:2]
         (hB, wB) = imageB.shape[:2]
@@ -376,66 +391,156 @@ class Stitcher(Utility.Method):
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
             stitchImage[0: hB, 0: wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-        fuseRegion = self.fuseImage([roiImageRegionA, roiImageRegionB], direction=direction, fuseMethod=fuseMethod)
+        fuseRegion = self.fuseImage([roiImageRegionA, roiImageRegionB])
         stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
 
-    def fuseImage(self, images, fuseMethod, direction="horizontal"):
+    def fuseImage(self, images):
         (imageA, imageB) = images
         fuseRegion = np.zeros(imageA.shape, np.uint8)
         imageA[imageA == 0] = imageB[imageA == 0]
         imageB[imageB == 0] = imageA[imageB == 0]
         imageFusion = ImageFusion.ImageFusion()
-        if fuseMethod[0] == "notFuse":
+        if self.fuseMethod == "notFuse":
             fuseRegion = imageB
-        elif fuseMethod[0] == "average":
+        elif self.fuseMethod == "average":
             fuseRegion = imageFusion.fuseByAverage(images)
-        elif fuseMethod[0] == "maximum":
+        elif self.fuseMethod == "maximum":
             fuseRegion = imageFusion.fuseByMaximum(images)
-        elif fuseMethod[0] == "minimum":
+        elif self.fuseMethod == "minimum":
             fuseRegion = imageFusion.fuseByMinimum(images)
-        elif fuseMethod[0] == "fadeInAndFadeOut":
-            fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images,direction)
-        elif fuseMethod[0] == "multiBandBlending":
+        elif self.fuseMethod == "fadeInAndFadeOut":
+            fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images,self.direction)
+        elif self.fuseMethod == "multiBandBlending":
             fuseRegion = imageFusion.fuseByMultiBandBlending(images)
-        elif fuseMethod[0] == "trigonometric":
-            fuseRegion = imageFusion.fuseByTrigonometric(images,direction)
-        elif fuseMethod[0] == "optimalSeamLine":
-            fuseRegion = imageFusion.fuseByOptimalSeamLine(images, direction)
+        elif self.fuseMethod == "trigonometric":
+            fuseRegion = imageFusion.fuseByTrigonometric(images,self.direction)
+        elif self.fuseMethod == "optimalSeamLine":
+            fuseRegion = imageFusion.fuseByOptimalSeamLine(images, self.direction)
         return fuseRegion
 
+    def calculateOffsetForFeatureSearch(self, images):
+        '''
+        Stitch two images
+        :param images: [imageA, imageB]
+        :param registrateMethod: list:
+        :param fuseMethod:
+        :param direction: stitching direction
+        :return:
+        '''
+        (imageA, imageB) = images
+        offset = [0, 0]
+        status = False
+
+        # get the feature points
+        (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
+        (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+        if featuresA is not None and featuresB is not None:
+            matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+            # match all the feature points
+            if self.offsetCaculate == "mode":
+                (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
+            elif self.offsetCaculate == "ransac":
+                (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
+        if status == False:
+            return (status, "  The two images can not match")
+        elif status == True:
+            self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
+            return (status, offset)
+
+    def calculateOffsetForFeatureSearchIncre(self, images):
+        '''
+        Stitch two images
+        :param images: [imageA, imageB]
+        :param registrateMethod: list:
+        :param fuseMethod:
+        :param direction: stitching direction
+        :return:
+        '''
+        (imageA, imageB) = images
+        offset = [0, 0]
+        status = False
+        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int)+ 1
+        iniDirection = self.direction
+        localDirection = iniDirection
+        for i in range(1, maxI):
+            self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI))
+            while(True):
+                # get the roi region of images
+                self.printAndWrite("  localDirection=" + str(localDirection))
+                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first", searchRatio = i * self.roiRatio)
+                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second", searchRatio = i * self.roiRatio)
+
+                # get the feature points
+                (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
+                (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
+                if featuresA is not None and featuresB is not None:
+                    matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+                    # match all the feature points
+                    if self.offsetCaculate == "mode":
+                        (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
+                    elif self.offsetCaculate == "ransac":
+                        (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
+                if status == True:
+                    break
+                else:
+                    localDirection = self.directionIncrease(localDirection)
+                if localDirection == iniDirection:
+                    break
+            if status == True:
+                if localDirection == 1:
+                    offset[0] = offset[0] + imageA.shape[0] - int(i * self.roiRatio * imageA.shape[0])
+                elif localDirection == 2:
+                    offset[1] = offset[1] + imageA.shape[1] - int(i * self.roiRatio * imageA.shape[1])
+                elif localDirection == 3:
+                    offset[0] = offset[0] - (imageB.shape[0] - int(i * self.roiRatio * imageB.shape[0]))
+                elif localDirection == 4:
+                    offset[1] = offset[1] - (imageB.shape[1] - int(i * self.roiRatio * imageB.shape[0]))
+                self.direction = localDirection
+                break
+        if status == False:
+            return (status, "  The two images can not match")
+        elif status == True:
+            self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
+            return (status, offset)
+
+    def getROIRegionForIncreMethod(self, image, direction=1, order="first", searchRatio=0.1):
+        row, col = image.shape[:2]
+        roiRegion = np.zeros(image.shape, np.uint8)
+        if direction == 1:
+            searchLength = np.floor(row * searchRatio).astype(int)
+            if order == "first":
+                roiRegion = image[row - searchLength:row, :]
+            elif order == "second":
+                roiRegion = image[0: searchLength, :]
+        elif direction == 2:
+            searchLength = np.floor(col * searchRatio).astype(int)
+            if order == "first":
+                roiRegion = image[:, col - searchLength:col]
+            elif order == "second":
+                roiRegion = image[:, 0: searchLength]
+        elif direction == 3:
+            searchLength = np.floor(row * searchRatio).astype(int)
+            if order == "first":
+                roiRegion = image[0: searchLength, :]
+            elif order == "second":
+                roiRegion = image[row - searchLength:row, :]
+        elif direction == 4:
+            searchLength = np.floor(col * searchRatio).astype(int)
+            if order == "first":
+                roiRegion = image[:, 0: searchLength]
+            elif order == "second":
+                roiRegion = image[:, col - searchLength:col]
+        return roiRegion
+
     def directionIncrease(self, direction):
-        direction = direction + 1
-        if direction == 4:
+        direction += 1
+        if direction == 5:
             direction = 1
         return direction
 
 if __name__=="__main__":
-    # fileList = [".\\images\\dendriticCrystal\\2\\2-030.jpg", ".\\images\\dendriticCrystal\\2\\2-031.jpg"]
-    # outputAddress = "result"
-    # evaluate = (True, "evaluate.txt")
-    # isPrintLog = True
-    # stitcher = Stitcher(outputAddress, evaluate, isPrintLog)
-    # registrateMethod = ("featureSearchWithIncrease", "surf", 0.65, ("mode", 100), (150, -1))
-    # fuseMethod = ("notFuse", "Test")
-    #
-    # (status, result) = stitcher.pairwiseStitch(fileList, registrateMethod, fuseMethod, direction="horizontal")
-    # if status == True:
-    #     cv2.imwrite(outputAddress + "\\stitching_result.jpg", result)
-    # if status == False:
-    #     print("拼接失败")
-    outputAddress = "result"
-    fileList = [".\\result\\dendriticCrystalNotFuse\\0.jpg", ".\\result\\dendriticCrystalNotFuse\\1.jpg", ".\\result\\dendriticCrystalNotFuse\\2.jpg"]
-    offset = [(-103, 2449), (-4, 4872)]
-    evaluate = (True, "evaluate.txt")
-    isPrintLog = True
-    stitcher = Stitcher(outputAddress, evaluate, isPrintLog)
-    registrateMethod = ("featureSearchWithIncrease", "surf", 0.65, ("mode", 100), (150, -1))
-    fuseMethod = ("trigonometric", "Test")
-    imageA = cv2.imread(fileList[0], 0)
-    imageB = cv2.imread(fileList[1], 0)
-    imageC = cv2.imread(fileList[2], 0)
-    (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB) = stitcher.getStitchByOffset([imageA, imageB], offset[0], fuseMethod)
-    (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB) = stitcher.getStitchByOffset([stitchImage, imageC],
-                                                                                             offset[1], fuseMethod)
-    cv2.imwrite("result.jpg", stitchImage)
+    stitcher = Stitcher()
+    imageA = cv2.imread(".\\images\\dendriticCrystal\\1\\1-044.jpg", 0)
+    imageB = cv2.imread(".\\images\\dendriticCrystal\\1\\1-045.jpg", 0)
+    offset = stitcher.calculateOffsetForFeatureSearchIncre([imageA, imageB])
