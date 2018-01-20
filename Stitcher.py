@@ -13,12 +13,15 @@ class Stitcher(Utility.Method):
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
 	'''
     direction = 1
+    directIncre = 1
     featureMethod = "surf"  # "sift","surf" or "orb"
     searchRatio = 0.75  # 0.75 is common value for matches
     offsetCaculate = "mode"  # "mode" or "ransac"
     offsetEvaluate = 10  # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     roiRatio = 0.1  # roi length for stitching in first direction
     fuseMethod = "notFuse"
+    isEnhance = False
+    isClahe = False
     clipLimit = 2
     tileSize = 10
 
@@ -51,7 +54,6 @@ class Stitcher(Utility.Method):
             endTime = time.time()
             self.printAndWrite("  The time of fusing is " + str(endTime - startTime) + "s")
             return (status, stitchImage)
-
 
     def gridStitch(self, fileList, filePosition, registrateMethod, fuseMethod, shootOrder="snakeByCol"):
         largeBlockNum = len(filePosition)
@@ -245,7 +247,6 @@ class Stitcher(Utility.Method):
                 elif searchLengthForLarge > 0:
                     roiRegion = image[0: searchLength, 0:searchLengthForLarge]
 
-
     def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
         totalStatus = False
         ptsA = np.float32([kpsA[i] for (_, i) in matches])
@@ -269,9 +270,6 @@ class Stitcher(Utility.Method):
             return (totalStatus ,[np.round(np.array(H).astype(np.int)[1,2]) * (-1), np.round(np.array(H).astype(np.int)[0,2]) * (-1)], adjustH)
         else:
             return (totalStatus, [0, 0], 0)
-
-
-
 
     def detectAndDescribe(self, image, featureMethod):
         '''
@@ -328,8 +326,10 @@ class Stitcher(Utility.Method):
         for trainIdx, queryIdx in matches:
             ptA = (kpsA[queryIdx][1], kpsA[queryIdx][0])
             ptB = (kpsB[trainIdx][1], kpsB[trainIdx][0])
-            dxList.append(int(round(ptA[0] - ptB[0])))
-            dyList.append(int(round(ptA[1] - ptB[1])))
+            # dxList.append(int(round(ptA[0] - ptB[0])))
+            # dyList.append(int(round(ptA[1] - ptB[1])))
+            dxList.append(int(ptA[0] - ptB[0]))
+            dyList.append(int(ptA[1] - ptB[1]))
         dxMode, count = mode(np.array(dxList), axis=None)
         dyMode, count = mode(np.array(dyList), axis=None)
         dx = int(dxMode); dy = int(dyMode)
@@ -419,6 +419,19 @@ class Stitcher(Utility.Method):
             fuseRegion = imageFusion.fuseByOptimalSeamLine(images, self.direction)
         return fuseRegion
 
+    def calculateOffsetForPhaseCorrleate(self, images):
+        (imageA, imageB) = images
+        offset = [0, 0]
+        # status = False
+        G_a = np.fft.fft2(imageA)
+        G_b = np.fft.fft2(imageB)
+        conj_b = np.ma.conjugate(G_b)
+        R = G_a * conj_b
+        R /= np.absolute(R)
+        r = np.fft.ifft2(R).real
+        offset = np.where(r == np.amax(abs(r)))
+        print(offset)
+
     def calculateOffsetForFeatureSearch(self, images):
         '''
         Stitch two images
@@ -431,7 +444,14 @@ class Stitcher(Utility.Method):
         (imageA, imageB) = images
         offset = [0, 0]
         status = False
-
+        if self.isEnhance == True:
+            if self.isClahe == True:
+                clahe = cv2.createCLAHE(clipLimit=self.clipLimit, tileGridSize=(self.tileSize, self.tileSize))
+                imageA = clahe.apply(imageA)
+                imageB = clahe.apply(imageB)
+            elif self.isClahe == False:
+                imageA = cv2.equalizeHist(imageA)
+                imageB = cv2.equalizeHist(imageB)
         # get the feature points
         (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
         (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
@@ -471,6 +491,14 @@ class Stitcher(Utility.Method):
                 roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first", searchRatio = i * self.roiRatio)
                 roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second", searchRatio = i * self.roiRatio)
 
+                if self.isEnhance == True:
+                    if self.isClahe == True:
+                        clahe = cv2.createCLAHE(clipLimit=self.clipLimit,tileGridSize=(self.tileSize, self.tileSize))
+                        roiImageA = clahe.apply(roiImageA)
+                        roiImageB = clahe.apply(roiImageB)
+                    elif self.isClahe == False:
+                        roiImageA = cv2.equalizeHist(roiImageA)
+                        roiImageB = cv2.equalizeHist(roiImageB)
                 # get the feature points
                 (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
                 (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
@@ -495,7 +523,7 @@ class Stitcher(Utility.Method):
                 elif localDirection == 3:
                     offset[0] = offset[0] - (imageB.shape[0] - int(i * self.roiRatio * imageB.shape[0]))
                 elif localDirection == 4:
-                    offset[1] = offset[1] - (imageB.shape[1] - int(i * self.roiRatio * imageB.shape[0]))
+                    offset[1] = offset[1] - (imageB.shape[1] - int(i * self.roiRatio * imageB.shape[1]))
                 self.direction = localDirection
                 break
         if status == False:
@@ -534,9 +562,11 @@ class Stitcher(Utility.Method):
         return roiRegion
 
     def directionIncrease(self, direction):
-        direction += 1
+        direction += self.directIncre
         if direction == 5:
             direction = 1
+        if direction == 0:
+            direction = 4
         return direction
 
 if __name__=="__main__":

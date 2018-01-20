@@ -4,7 +4,7 @@ import time
 import glob
 import os
 
-resultAddress = "result\\featureSearchIncre\\"
+resultAddress = "result\\featureSearch\\"
 
 def pairwiseStitch(fileList):
     stitcher = Stitcher()
@@ -37,15 +37,10 @@ def gridStitch(fileList):
         stitcher.printAndWrite("stitching" + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]))
         imageA = cv2.imread(fileList[fileIndex], 0)
         imageB = cv2.imread(fileList[fileIndex + 1], 0)
-        # clahe = cv2.createCLAHE(clipLimit=stitcher.clipLimit, tileGridSize=(stitcher.tileSize, stitcher.tileSize))
-        # tempA = clahe.apply(imageA)
-        # tempB = clahe.apply(imageB)
-        # tempA = cv2.equalizeHist(imageA)
-        # tempB = cv2.equalizeHist(imageB)
         (status, offset) = stitcher.calculateOffsetForFeatureSearch([imageA, imageB])
-        # (status, offset) = stitcher.calculateOffsetForFeatureSearchIncre([imageA, imageB])
         if status == False:
-            return (False, "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + str(offset))
+            break
+            # return (False, "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + str(offset))
         else:
             offsetList.append(offset)
     endTime = time.time()
@@ -57,7 +52,8 @@ def gridStitch(fileList):
     startTime = time.time()
     dxSum = 0; dySum = 0
     stitchImage = cv2.imread(fileList[0], 0)
-    for fileIndex in range(0, fileNum - 1):
+    fileNum = len(offsetList)
+    for fileIndex in range(0, fileNum):
         stitcher.printAndWrite("  stitching " + str(fileList[fileIndex + 1]))
         imageB = cv2.imread(fileList[fileIndex + 1], 0)
         dxSum = offsetList[fileIndex][0] + dxSum
@@ -126,17 +122,38 @@ def superalloyTurbinebladeGridStitch():
         if status == False:
             print("stitching Failed")
 
+def zirconSmallGridStitch():
+    # Image stitching For iron By pairwise stitching
+    projectAddress = ".\\images\\zirconSmall"
+    fileNum = 2
+    for i in range(1, fileNum):
+        fileAddress = projectAddress + "\\" + str(i + 1) + "\\"
+        fileList = glob.glob(fileAddress + "*.jpg")
+        outputAddress = resultAddress + "zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
+        if not os.path.exists(outputAddress):
+            os.makedirs(outputAddress)
+        Stitcher.outputAddress = outputAddress
+        (status, result) = gridStitch(fileList)
+        if status == True:
+            cv2.imwrite(outputAddress + "\\stitching_result_" + str(i + 1) + ".jpg", result)
+        if status == False:
+            print("stitching Failed")
 
 if __name__=="__main__":
-    Stitcher.featureMethod = "sift"     # "sift","surf" or "orb"
-    Stitcher.searchRatio = 0.9           # 0.75 is common value for matches
+    Stitcher.featureMethod = "surf"     # "sift","surf" or "orb"
+    Stitcher.searchRatio = 0.75          # 0.75 is common value for matches
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
-    Stitcher.offsetEvaluate = 2      # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
-    Stitcher.roiRatio = 0.1             # roi length for stitching in first direction
+    Stitcher.offsetEvaluate = 2          # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
+    Stitcher.roiRatio = 0.1              # roi length for stitching in first direction
     Stitcher.fuseMethod = "notFuse"
     Stitcher.clipLimit = 25
     Stitcher.tileSize = 10
 
     # ironPariwiseStitch()
     # dendriticCrystalGridStitch()
-    superalloyTurbinebladeGridStitch()
+    # superalloyTurbinebladeGridStitch()
+    Stitcher.direction = 4
+    Stitcher.directIncre = 0
+    Stitcher.isEnhance = True
+    Stitcher.isClahe = True
+    zirconSmallGridStitch()
