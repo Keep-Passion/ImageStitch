@@ -3,4 +3,5 @@
 .idea/
 images/
 result/
+.cache/
 __pycache__/
