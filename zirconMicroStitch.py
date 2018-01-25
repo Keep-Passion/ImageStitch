@@ -9,11 +9,11 @@ outputAddress = "result\\stitchResult.tiff"
 fileExtension = "jpg"
 
 method = "featureSearchIncre"
-Stitcher.featureMethod = "sift"  # "sift","surf" or "orb"
-Stitcher.searchRatio = 0.9  # 0.75 is common value for matches
-Stitcher.offsetCaculate = "mode"  # "mode" or "ransac"
-Stitcher.offsetEvaluate = 2  # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
-Stitcher.roiRatio = 0.2  # roi length for stitching in first direction
+Stitcher.featureMethod = "sift"     # "sift","surf" or "orb"
+Stitcher.searchRatio = 0.9          # 0.75 is common value for matches
+Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
+Stitcher.offsetEvaluate = 2         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
+Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
 Stitcher.fuseMethod = "notFuse"
 Stitcher.direction = 4
 Stitcher.directIncre = 0
