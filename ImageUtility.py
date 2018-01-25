@@ -133,6 +133,8 @@ class Method():
             ptB = (kpsB[trainIdx][1], kpsB[trainIdx][0])
             # dxList.append(int(round(ptA[0] - ptB[0])))
             # dyList.append(int(round(ptA[1] - ptB[1])))
+            if int(ptA[0] - ptB[0]) == 0 and int(ptA[1] - ptB[1]) == 0:
+                continue
             dxList.append(int(ptA[0] - ptB[0]))
             dyList.append(int(ptA[1] - ptB[1]))
         dxMode, count = mode(np.array(dxList), axis=None)

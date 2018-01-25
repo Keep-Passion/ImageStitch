@@ -23,8 +23,8 @@ class Stitcher(Utility.Method):
     fuseMethod = "notFuse"
     isEnhance = False
     isClahe = False
-    clipLimit = 2
-    tileSize = 10
+    clipLimit = 20
+    tileSize = 5
 
     def directionIncrease(self, direction):
         direction += self.directIncre
