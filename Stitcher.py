@@ -8,6 +8,7 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
+from phasecorrelation import *
 
 class Stitcher(Utility.Method):
     '''
@@ -106,6 +107,8 @@ class Stitcher(Utility.Method):
             self.printAndWrite("stitching " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex + 1]))
             imageA = cv2.imread(fileList[fileIndex], 0)
             imageB = cv2.imread(fileList[fileIndex + 1], 0)
+            if caculateOffsetMethod == self.calculateOffsetForPhaseCorrleate:
+                (status, offset) = self.calculateOffsetForPhaseCorrleate([fileList[fileIndex], fileList[fileIndex + 1]])
             (status, offset) = caculateOffsetMethod([imageA, imageB])
             if status == False:
                 describtion = "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched"
@@ -159,29 +162,14 @@ class Stitcher(Utility.Method):
             if status == False:
                 print("stitching Failed")
 
-    def calculateOffsetForPhaseCorrleate(self, images):
-        (imageA, imageB) = images
+    def calculateOffsetForPhaseCorrleate(self, dirAddress):
+        (dir1, dir2) = dirAddress
         offset = [0, 0]
         status = True
+        offset = phaseCorrelation(dir1, dir2)
 
-        # G_a = np.fft.fft2(imageA)
-        # G_b = np.fft.fft2(imageB)
-        # conj_b = np.ma.conjugate(G_b)
-        # R = G_a * conj_b
-        # R /= np.absolute(R)
-        # r = np.fft.ifft2(R).real
-        # offsetPhase = np.where(r == np.amax(abs(r)))
-        # offset[0] = np.int(offsetPhase[0])
-        # offset[1] = np.int(offsetPhase[1])
-        offsetPhase = cv2.phaseCorrelate(imageA.astype(np.float64), imageB.astype(np.float64))
-        cv2.phase
-        offset[0] = np.int(np.round(offsetPhase[0][0]))
-        offset[1] = np.int(np.round(offsetPhase[0][1]))
-        if offset[0] == offset[1] and offset[0] == 0:
-            status = False
 
-        print(status)
-        print(offset)
+
         return (status, offset)
 
     def calculateOffsetForFeatureSearch(self, images):
