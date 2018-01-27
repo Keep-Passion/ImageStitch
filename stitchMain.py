@@ -32,7 +32,8 @@ def stitchWithPhase():
     projectAddress = "images\\zirconSmall"
     outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
     stitcher.imageSetStitch(projectAddress, outputAddress, 51, stitcher.calculateOffsetForPhaseCorrleate,
-                            startNum=4, fileExtension="jpg", outputfileExtension="jpg")
+                            startNum=6, fileExtension="jpg", outputfileExtension="jpg")
+    Stitcher.phase.shutdown()
 
 if __name__=="__main__":
     # stitchWithFeatureIncre()

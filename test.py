@@ -66,8 +66,8 @@ class phaseCorrelation:
 
 if __name__ == '__main__':
     phase = phaseCorrelation()
-    dir1 = "C:\\Coding_Test\\Python\\ImageStitch\\images\\zirconSmall\\6\\16AKJISIA602-F-1.jpg"
-    dir2 = "C:\\Coding_Test\\Python\\ImageStitch\\images\\zirconSmall\\6\\16AKJISIA602-F-2.jpg"
+    dir1 = "images/superalloyTurbineblade/4/SHT-A5-100-071215_001.JPG"
+    dir2 = "images/superalloyTurbineblade/4/FQ/SHT-A5-100-071215_002.JPG"
     offset = phase.phaseCorrelation(dir1,dir2)
     print(offset)
     phase.shutdown()

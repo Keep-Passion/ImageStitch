@@ -26,6 +26,7 @@ class Stitcher(Utility.Method):
     isClahe = False
     clipLimit = 20
     tileSize = 5
+    phase = phaseCorrelation()
 
     def directionIncrease(self, direction):
         direction += self.directIncre
@@ -109,7 +110,8 @@ class Stitcher(Utility.Method):
             imageB = cv2.imread(fileList[fileIndex + 1], 0)
             if caculateOffsetMethod == self.calculateOffsetForPhaseCorrleate:
                 (status, offset) = self.calculateOffsetForPhaseCorrleate([fileList[fileIndex], fileList[fileIndex + 1]])
-            (status, offset) = caculateOffsetMethod([imageA, imageB])
+            else:
+                (status, offset) = caculateOffsetMethod([imageA, imageB])
             if status == False:
                 describtion = "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched"
                 break
@@ -166,10 +168,16 @@ class Stitcher(Utility.Method):
         (dir1, dir2) = dirAddress
         offset = [0, 0]
         status = True
-        offset = phaseCorrelation(dir1, dir2)
-
-
-
+        # phase = phaseCorrelation()
+        offsetList = self.phase.phaseCorrelation(dir1, dir2)
+        # print(offset)
+        # phase.shutdown()
+        offset = []
+        offset.append(np.int(np.round(offsetList[1])))
+        offset.append(np.int(np.round(offsetList[0])))
+        # offset[0] = np.round(offsetList[0])
+        # offset[1] = np.round(offsetList[1])
+        self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
         return (status, offset)
 
     def calculateOffsetForFeatureSearch(self, images):
