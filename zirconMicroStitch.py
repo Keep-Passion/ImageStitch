@@ -4,7 +4,7 @@ import time
 import glob
 import os
 
-fileAddress = "images\\zirconLarge\\17\\"
+fileAddress = "images\\zirconLarge\\3\\"
 fileExtension = "jpg"
 outputAddress = "result\\stitchResult.png"
 
@@ -33,7 +33,7 @@ def zirconMicroStitchWithEnhance():
     cv2.imwrite(outputAddress, result)
 
 if __name__=="__main__":
-    # zirconMicroStitch()
-    zirconMicroStitchWithEnhance()
+    zirconMicroStitch()
+    # zirconMicroStitchWithEnhance()
 
 

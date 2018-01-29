@@ -356,10 +356,6 @@ class Stitcher(Utility.Method):
         return fuseRegion
 
 
-
-
-
-
 if __name__=="__main__":
     stitcher = Stitcher()
     imageA = cv2.imread(".\\images\\dendriticCrystal\\1\\1-044.jpg", 0)
