@@ -4,10 +4,9 @@ import time
 import glob
 import os
 
-fileAddress = "images\\zirconLarge\\3\\"
+fileAddress = "images\\zirconLarge\\1\\"
 fileExtension = "jpg"
 outputAddress = "result\\stitchResult.png"
-
 
 method = "featureSearchIncre"
 Stitcher.featureMethod = "sift"     # "sift","surf" or "orb"

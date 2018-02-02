@@ -36,66 +36,6 @@ class Stitcher(Utility.Method):
             direction = 4
         return direction
 
-    def calculateOffset(self, images, registrateMethod, direction="horizontal"):
-        '''
-        Stitch two images
-        :param images: [imageA, imageB]
-        :param registrateMethod: list:
-        :param fuseMethod:
-        :param direction: stitching direction
-        :return:
-        '''
-        (imageA, imageB) = images
-        offset = [0, 0]
-        status = False
-        H = np.eye(3, dtype=np.float64)
-        if  registrateMethod[0] == "phaseCorrection":
-            return (False, "  We don't develop the phase Correction method, Plesae wait for updating", 0)
-        elif  registrateMethod[0] == "featureSearchWithIncrease":
-            featureMethod = registrateMethod[1]        # "sift","surf" or "orb"
-            searchRatio = registrateMethod[2]          # 0.75 is common value for matches
-            offsetCaculate = registrateMethod[3][0]    # "mode" or "ransac"
-            offsetEvaluate = registrateMethod[3][1]    # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
-            roiFirstLength = registrateMethod[4][0]     # roi length for stitching in first direction
-            roiSecondLength = registrateMethod[4][1]    # roi length for stitching in second direction
-
-            if direction == "horizontal":
-                maxI = int(imageA.shape[1] / (2 * roiFirstLength)) + 1
-            elif direction == "vertical":
-                maxI = int(imageA.shape[0] / (2 * roiFirstLength)) + 1
-            for i in range(1, maxI+1):
-                self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI+1))
-                # get the roi region of images
-                roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=i * roiFirstLength,
-                                                  searchLengthForLarge=roiSecondLength)
-                roiImageB = self.getROIRegion(imageB, direction=direction, order="second", searchLength=i * roiFirstLength,
-                                                  searchLengthForLarge=roiSecondLength)
-                # get the feature points
-                (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
-                (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
-                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
-
-                # match all the feature points
-                localStartTime = time.time()
-                if offsetCaculate == "mode":
-                    (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate)
-                elif offsetCaculate == "ransac":
-                    (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate)
-                    H = adjustH
-                if direction == "horizontal" and status == True:
-                    offset[1] = offset[1] + imageA.shape[1] - i * roiFirstLength
-                elif direction == "vertical" and status == True:
-                    offset[0] = offset[0] + imageA.shape[0] - i * roiFirstLength
-                if status == True:
-                    break
-        if status == False:
-            return (status, "  The two images can not match", 0)
-        elif status == True:
-            localEndTime = time.time()
-            self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
-            self.printAndWrite("  The time of mode/ransac is " + str(localEndTime - localStartTime) + "s")
-            return (status, offset, H)
-
     def flowStitch(self, fileList, caculateOffsetMethod):
         self.printAndWrite("Stitching the directory which have " + str(fileList[0]))
         fileNum = len(fileList)
