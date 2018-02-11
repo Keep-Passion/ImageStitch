@@ -38,12 +38,12 @@ def stitchWithFeatureSearchImageSet():
     Stitcher.isEnhance = True
     Stitcher.isClahe = True
     stitcher = Stitcher()
-    projectAddress = "images\\zirconSmall"
-    outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitch(projectAddress, outputAddress, 51, stitcher.calculateOffsetForFeatureSearch,
-                            startNum=50, fileExtension="jpg", outputfileExtension="jpg")
+    projectAddress = "images\\zirconLargeResized_4"
+    outputAddress = "result\\" + method + "\\zirconLargeResized_4" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    stitcher.imageSetStitch(projectAddress, outputAddress, 20, stitcher.calculateOffsetForFeatureSearch,
+                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
 if __name__=="__main__":
     # zirconStitch()
-    zirconStitchWithEnhance()
-    # stitchWithFeatureSearchImageSet()
+    # zirconStitchWithEnhance()
+    stitchWithFeatureSearchImageSet()

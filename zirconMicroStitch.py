@@ -4,7 +4,7 @@ import time
 import glob
 import os
 
-fileAddress = "images\\zirconLarge\\1\\"
+fileAddress = "images\\zirconLargeResized_4\\1\\"
 fileExtension = "jpg"
 outputAddress = "result\\stitchResult.png"
 
@@ -17,11 +17,13 @@ Stitcher.roiRatio = 0.2             # roi length for stitching in first directio
 Stitcher.fuseMethod = "notFuse"
 Stitcher.direction = 4
 Stitcher.directIncre = 0
+Stitcher.phaseResponseThreshold = 0.1
 stitcher = Stitcher()
 
 def zirconMicroStitch():
     fileList = glob.glob(fileAddress + "*." + fileExtension)
-    status, result = stitcher.flowStitch(fileList, stitcher.calculateOffsetForFeatureSearchIncre)
+    status, result = stitcher.flowStitch(fileList, stitcher.calculateOffsetForPhaseCorrleateIncre)
+    # status, result = stitcher.flowStitch(fileList, stitcher.calculateOffsetForFeatureSearchIncre)
     cv2.imwrite(outputAddress, result)
 
 def zirconMicroStitchWithEnhance():
@@ -31,8 +33,22 @@ def zirconMicroStitchWithEnhance():
     status, result = stitcher.flowStitch(fileList, stitcher.calculateOffsetForFeatureSearchIncre)
     cv2.imwrite(outputAddress, result)
 
+def stitchWithFeatureSearchImageSet():
+    method = "featureSearchIncre"
+    Stitcher.fuseMethod = "notFuse"
+    stitcher = Stitcher()
+    stitcher.phaseResponseThreshold = 0.3
+    stitcher.directIncre = 0
+    projectAddress = "images\\zirconLargeResized_8_INTER_AREA"
+    outputAddress = "result\\" + method + "\\zirconLargeResized_8_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # projectAddress = "images\\zirconSmall"
+    # outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 22, stitcher.calculateOffsetForFeatureSearchIncre,
+                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+
 if __name__=="__main__":
-    zirconMicroStitch()
+    # zirconMicroStitch()
     # zirconMicroStitchWithEnhance()
+    stitchWithFeatureSearchImageSet()
 
 
