@@ -9,7 +9,7 @@ fileExtension = "jpg"
 outputAddress = "result\\stitchResult.png"
 
 method = "featureSearchIncre"
-Stitcher.featureMethod = "sift"     # "sift","surf" or "orb"
+Stitcher.featureMethod = "surf"     # "sift","surf" or "orb"
 Stitcher.searchRatio = 0.9          # 0.75 is common value for matches
 Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
 Stitcher.offsetEvaluate = 2         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
@@ -34,7 +34,7 @@ def zirconMicroStitchWithEnhance():
     cv2.imwrite(outputAddress, result)
 
 def stitchWithFeatureSearchImageSet():
-    method = "featureSearchIncre"
+    method = "featureSearch"
     Stitcher.fuseMethod = "notFuse"
     stitcher = Stitcher()
     stitcher.phaseResponseThreshold = 0.3
@@ -43,12 +43,15 @@ def stitchWithFeatureSearchImageSet():
     outputAddress = "result\\" + method + "\\zirconLargeResized_8_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
     # projectAddress = "images\\zirconSmall"
     # outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 22, stitcher.calculateOffsetForFeatureSearchIncre,
-                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 25, stitcher.calculateOffsetForFeatureSearch,
+                            startNum=24, fileExtension="jpg", outputfileExtension="jpg")
 
 if __name__=="__main__":
-    # zirconMicroStitch()
-    # zirconMicroStitchWithEnhance()
     stitchWithFeatureSearchImageSet()
+    # for i in range(53, 96):
+    #     projectAddress = "images\\zirconSmall\\" + str(i+1) + "\\*.jpg"
+    #     address = glob.glob(projectAddress)
+    #     print(address[0].split("\\")[-1][0 : -7])
+    #     print(address[0].split("\\")[-1])
 
 

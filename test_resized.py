@@ -11,8 +11,8 @@ def resize(img, resizeTimes):
 outputProject = ".\\images\\zirconLargeResized_8_INTER_AREA\\"
 inputProject = ".\\images\\zirconLarge\\"
 
-Num = 23
-for i in range(0, Num):
+Num = 24
+for i in range(23, Num):
     fileList = glob.glob(inputProject + str(i+1) + "\\" + "*.jpg")
     fileNum = len(fileList)
     if os.path.exists(outputProject + str(i+1) + "\\") is False:

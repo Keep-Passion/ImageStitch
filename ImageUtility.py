@@ -179,3 +179,9 @@ class Method():
             elif order == "second":
                 roiRegion = image[:, col - searchLength:col]
         return roiRegion
+
+    def resizeImg(self, image, resizeTimes, interMethod = cv2.INTER_AREA):
+        (h, w) = image.shape
+        resizeH = int(h * resizeTimes)
+        resizeW = int(w * resizeTimes)
+        return cv2.resize(image, (resizeW, resizeH), interpolation=interMethod)
