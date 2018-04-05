@@ -141,14 +141,15 @@ class Stitcher(Utility.Method):
                 os.makedirs(outputAddress)
             Stitcher.outputAddress = outputAddress
             result = self.flowStitchWithMutiple(fileList, caculateOffsetMethod)
-            outputName = fileList[0].split("\\")[-1][0 : -7]
+            outputName = fileList[0].split("\\")[-1][0 : -8]
+            # print("---------------------------" + outputName)
             if len(result) == 1:
-                cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "." + outputfileExtension, result[0])
-                # cv2.imwrite(outputAddress + "\\" + outputName + "." + outputfileExtension, result[0])
+                # cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "." + outputfileExtension, result[0])
+                cv2.imwrite(outputAddress + "\\" + outputName + "." + outputfileExtension, result[0])
             else:
                 for j in range(0, len(result)):
-                    cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "_" + str(j+1) + "." + outputfileExtension, result[j])
-                    # cv2.imwrite(outputAddress + "\\" + outputName + "_" + str(j + 1) + "." + outputfileExtension,result[j])
+                    # cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "_" + str(j+1) + "." + outputfileExtension, result[j])
+                    cv2.imwrite(outputAddress + "\\" + outputName + "_" + str(j + 1) + "." + outputfileExtension,result[j])
 
     def calculateOffsetForPhaseCorrleate(self, dirAddress):
         (dir1, dir2) = dirAddress
