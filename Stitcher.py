@@ -141,7 +141,7 @@ class Stitcher(Utility.Method):
                 os.makedirs(outputAddress)
             Stitcher.outputAddress = outputAddress
             result = self.flowStitchWithMutiple(fileList, caculateOffsetMethod)
-            outputName = fileList[0].split("\\")[-1][0 : -8]
+            outputName = fileList[0].split("\\")[-1][0 : -7]
             # print("---------------------------" + outputName)
             if len(result) == 1:
                 # cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "." + outputfileExtension, result[0])

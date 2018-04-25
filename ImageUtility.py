@@ -137,15 +137,18 @@ class Method():
                 continue
             dxList.append(int(ptA[0] - ptB[0]))
             dyList.append(int(ptA[1] - ptB[1]))
-        dxMode, count = mode(np.array(dxList), axis=None)
-        dyMode, count = mode(np.array(dyList), axis=None)
-        dx = int(dxMode); dy = int(dyMode)
-        # Evaluate
-        maxNum = len(dxList)
-        num = 0
-        for i in range(0, maxNum):
-            if dxList[i] == dx and dyList[i] == dy:
-                num += 1
+
+        # Get Mode offset in [dxList, dyList], thanks for clovermini
+        zipped = zip(dxList, dyList)
+        zip_list = list(zipped)
+        zip_dict = dict((a, zip_list.count(a)) for a in zip_list)
+        zip_dict_sorted = dict(sorted(zip_dict.items(), key=lambda x: x[1], reverse=True))
+
+        dx = list(zip_dict_sorted)[0][0]
+        dy = list(zip_dict_sorted)[0][1]
+        num = zip_dict_sorted[list(zip_dict_sorted)[0]]
+        # print("dx = " + str(dx) + ", dy = " + str(dy) + ", num = " + str(num))
+
         if num < offsetEvaluate:
             totalStatus = False
         self.printAndWrite("  In Mode, The number of num is " + str(num) + " and the number of offsetEvaluate is "+str(offsetEvaluate))
