@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import math
 from scipy.stats import mode
 
 class Method():
@@ -133,17 +134,22 @@ class Method():
             ptB = (kpsB[trainIdx][1], kpsB[trainIdx][0])
             # dxList.append(int(round(ptA[0] - ptB[0])))
             # dyList.append(int(round(ptA[1] - ptB[1])))
+            if int(ptA[0] - ptB[0]) == 0 and int(ptA[1] - ptB[1]) == 0:
+                continue
             dxList.append(int(ptA[0] - ptB[0]))
             dyList.append(int(ptA[1] - ptB[1]))
-        dxMode, count = mode(np.array(dxList), axis=None)
-        dyMode, count = mode(np.array(dyList), axis=None)
-        dx = int(dxMode); dy = int(dyMode)
-        # Evaluate
-        maxNum = len(dxList)
-        num = 0
-        for i in range(0, maxNum):
-            if dxList[i] == dx and dyList[i] == dy:
-                num += 1
+
+        # Get Mode offset in [dxList, dyList], thanks for clovermini
+        zipped = zip(dxList, dyList)
+        zip_list = list(zipped)
+        zip_dict = dict((a, zip_list.count(a)) for a in zip_list)
+        zip_dict_sorted = dict(sorted(zip_dict.items(), key=lambda x: x[1], reverse=True))
+
+        dx = list(zip_dict_sorted)[0][0]
+        dy = list(zip_dict_sorted)[0][1]
+        num = zip_dict_sorted[list(zip_dict_sorted)[0]]
+        # print("dx = " + str(dx) + ", dy = " + str(dy) + ", num = " + str(num))
+
         if num < offsetEvaluate:
             totalStatus = False
         self.printAndWrite("  In Mode, The number of num is " + str(num) + " and the number of offsetEvaluate is "+str(offsetEvaluate))
@@ -177,3 +183,50 @@ class Method():
             elif order == "second":
                 roiRegion = image[:, col - searchLength:col]
         return roiRegion
+
+    def resizeImg(self, image, resizeTimes, interMethod = cv2.INTER_AREA):
+        (h, w) = image.shape
+        resizeH = int(h * resizeTimes)
+        resizeW = int(w * resizeTimes)
+        # cv2.INTER_AREA是测试后最好的方法
+        return cv2.resize(image, (resizeW, resizeH), interpolation=interMethod)
+
+    def rectifyFinalImg(self, image, regionLength = 10):
+
+        (h, w) = image.shape
+        upperLeft   = np.sum(image[0: regionLength, 0: regionLength])
+        upperRight  = np.sum(image[0: regionLength, w - regionLength: w])
+        bottomLeft  = np.sum(image[h - regionLength: h, 0: regionLength])
+        bottomRight = np.sum(image[h - regionLength: h, w - regionLength: w])
+        # 预处理
+        zeroCol = image[:, 0]
+        noneZeroNum = np.count_nonzero(zeroCol)
+
+        zeroNum = h - noneZeroNum
+        print("h:" + str(h))
+        print("w:" + str(w))
+        print("noneZeroNum:" + str(noneZeroNum))
+        print("zeroNum:" + str(zeroNum))
+        print("除法:" + str(noneZeroNum / h))
+        if (noneZeroNum / h) < 0.5:
+            resultImage = image
+        elif upperLeft == 0 and bottomRight == 0 and upperRight != 0 and bottomLeft != 0:      # 左边低，右边高
+            print(1)
+            center = (w // 2, h // 2)
+            print(w)
+            print(h)
+            angle = math.atan(center[1] / center[0]) * 180 / math.pi
+            print(str(angle))
+            M = cv2.getRotationMatrix2D(center, -1 * angle, 1.0)
+            print(M)
+            resultImage = cv2.warpAffine(image, M, (w, h))
+        elif upperLeft != 0 and bottomRight != 0 and upperRight == 0 and bottomLeft == 0:    # 左边高，右边低
+            print(2)
+            center = (w // 2, h // 2)
+            angle = math.atan(center[1] / center[0]) * 180 / math.pi / 2
+            print(str(angle))
+            M = cv2.getRotationMatrix2D(center, angle, 1.0)
+            resultImage = cv2.warpAffine(image, M, (w, h))
+        else:
+            resultImage = image
+        return resultImage

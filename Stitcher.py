@@ -8,6 +8,7 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
+from phasecorrelation import *
 
 class Stitcher(Utility.Method):
     '''
@@ -23,8 +24,11 @@ class Stitcher(Utility.Method):
     fuseMethod = "notFuse"
     isEnhance = False
     isClahe = False
-    clipLimit = 2
-    tileSize = 10
+    clipLimit = 20
+    tileSize = 5
+    phaseResponseThreshold = 0.15
+    phase = phaseCorrelation()
+    overlapRatio = []
 
     def directionIncrease(self, direction):
         direction += self.directIncre
@@ -34,66 +38,6 @@ class Stitcher(Utility.Method):
             direction = 4
         return direction
 
-    def calculateOffset(self, images, registrateMethod, direction="horizontal"):
-        '''
-        Stitch two images
-        :param images: [imageA, imageB]
-        :param registrateMethod: list:
-        :param fuseMethod:
-        :param direction: stitching direction
-        :return:
-        '''
-        (imageA, imageB) = images
-        offset = [0, 0]
-        status = False
-        H = np.eye(3, dtype=np.float64)
-        if  registrateMethod[0] == "phaseCorrection":
-            return (False, "  We don't develop the phase Correction method, Plesae wait for updating", 0)
-        elif  registrateMethod[0] == "featureSearchWithIncrease":
-            featureMethod = registrateMethod[1]        # "sift","surf" or "orb"
-            searchRatio = registrateMethod[2]          # 0.75 is common value for matches
-            offsetCaculate = registrateMethod[3][0]    # "mode" or "ransac"
-            offsetEvaluate = registrateMethod[3][1]    # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
-            roiFirstLength = registrateMethod[4][0]     # roi length for stitching in first direction
-            roiSecondLength = registrateMethod[4][1]    # roi length for stitching in second direction
-
-            if direction == "horizontal":
-                maxI = int(imageA.shape[1] / (2 * roiFirstLength)) + 1
-            elif direction == "vertical":
-                maxI = int(imageA.shape[0] / (2 * roiFirstLength)) + 1
-            for i in range(1, maxI+1):
-                self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI+1))
-                # get the roi region of images
-                roiImageA = self.getROIRegion(imageA, direction=direction, order="first", searchLength=i * roiFirstLength,
-                                                  searchLengthForLarge=roiSecondLength)
-                roiImageB = self.getROIRegion(imageB, direction=direction, order="second", searchLength=i * roiFirstLength,
-                                                  searchLengthForLarge=roiSecondLength)
-                # get the feature points
-                (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=featureMethod)
-                (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=featureMethod)
-                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, searchRatio)
-
-                # match all the feature points
-                localStartTime = time.time()
-                if offsetCaculate == "mode":
-                    (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate)
-                elif offsetCaculate == "ransac":
-                    (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate)
-                    H = adjustH
-                if direction == "horizontal" and status == True:
-                    offset[1] = offset[1] + imageA.shape[1] - i * roiFirstLength
-                elif direction == "vertical" and status == True:
-                    offset[0] = offset[0] + imageA.shape[0] - i * roiFirstLength
-                if status == True:
-                    break
-        if status == False:
-            return (status, "  The two images can not match", 0)
-        elif status == True:
-            localEndTime = time.time()
-            self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
-            self.printAndWrite("  The time of mode/ransac is " + str(localEndTime - localStartTime) + "s")
-            return (status, offset, H)
-
     def flowStitch(self, fileList, caculateOffsetMethod):
         self.printAndWrite("Stitching the directory which have " + str(fileList[0]))
         fileNum = len(fileList)
@@ -102,17 +46,23 @@ class Stitcher(Utility.Method):
         # calculating the offset for small image
         startTime = time.time()
         status = True
+        endfileIndex = 0
         for fileIndex in range(0, fileNum - 1):
             self.printAndWrite("stitching " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex + 1]))
             imageA = cv2.imread(fileList[fileIndex], 0)
             imageB = cv2.imread(fileList[fileIndex + 1], 0)
-            (status, offset) = caculateOffsetMethod([imageA, imageB])
+            if caculateOffsetMethod == self.calculateOffsetForPhaseCorrleate:
+                (status, offset) = self.calculateOffsetForPhaseCorrleate([fileList[fileIndex], fileList[fileIndex + 1]])
+            else:
+                (status, offset) = caculateOffsetMethod([imageA, imageB])
             if status == False:
                 describtion = "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched"
                 break
             else:
                 offsetList.append(offset)
+                endfileIndex = fileIndex + 1
         endTime = time.time()
+
         self.printAndWrite("The time of registering is " + str(endTime - startTime) + "s")
         self.printAndWrite("  The offsetList is " + str(offsetList))
 
@@ -123,6 +73,7 @@ class Stitcher(Utility.Method):
         dySum = 0
         stitchImage = cv2.imread(fileList[0], 0)
         offsetListNum = len(offsetList)
+
         for fileIndex in range(0, offsetListNum):
             self.printAndWrite("  stitching " + str(fileList[fileIndex + 1]))
             imageB = cv2.imread(fileList[fileIndex + 1], 0)
@@ -144,7 +95,30 @@ class Stitcher(Utility.Method):
 
         if status == False:
             self.printAndWrite(describtion)
-        return (status, stitchImage)
+        return ((status, endfileIndex), stitchImage)
+
+    def flowStitchWithMutiple(self, fileList, caculateOffsetMethod):
+        result = []
+        totalNum = len(fileList)
+        startNum = 0
+        while 1:
+            (status, stitchResult) = self.flowStitch(fileList[startNum: totalNum], caculateOffsetMethod)
+            result.append(stitchResult)
+            if status[1] == 1:
+                startNum = startNum + status[1] + 1
+            else:
+                startNum = startNum + status[1] + 1
+
+            print("status[1] = " + str(status[1]))
+            print("startNum = "+str(startNum))
+            if startNum == totalNum:
+                break
+            if startNum == (totalNum - 1):
+                result.append(cv2.imread(fileList[startNum], 0))
+                break
+            self.printAndWrite("stitching Break, start from " + str(fileList[startNum]) + " again")
+
+        return result
 
     def imageSetStitch(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
         for i in range(startNum, fileNum+1):
@@ -159,30 +133,94 @@ class Stitcher(Utility.Method):
             if status == False:
                 print("stitching Failed")
 
-    def calculateOffsetForPhaseCorrleate(self, images):
-        (imageA, imageB) = images
+    def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
+        for i in range(startNum, fileNum+1):
+            fileAddress = projectAddress + "\\" + str(i) + "\\"
+            fileList = glob.glob(fileAddress + "*." + fileExtension)
+            if not os.path.exists(outputAddress):
+                os.makedirs(outputAddress)
+            Stitcher.outputAddress = outputAddress
+            result = self.flowStitchWithMutiple(fileList, caculateOffsetMethod)
+            # outputName = fileList[0].split("\\")[-1][0 : -7]
+            # print("---------------------------" + outputName)
+            if len(result) == 1:
+                cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "." + outputfileExtension, result[0])
+                # cv2.imwrite(outputAddress + "\\" + outputName + "." + outputfileExtension, result[0])
+            else:
+                for j in range(0, len(result)):
+                    cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "_" + str(j+1) + "." + outputfileExtension, result[j])
+                    # cv2.imwrite(outputAddress + "\\" + outputName + "_" + str(j + 1) + "." + outputfileExtension,result[j])
+
+    def calculateOffsetForPhaseCorrleate(self, dirAddress):
+        (dir1, dir2) = dirAddress
         offset = [0, 0]
         status = True
-
-        # G_a = np.fft.fft2(imageA)
-        # G_b = np.fft.fft2(imageB)
-        # conj_b = np.ma.conjugate(G_b)
-        # R = G_a * conj_b
-        # R /= np.absolute(R)
-        # r = np.fft.ifft2(R).real
-        # offsetPhase = np.where(r == np.amax(abs(r)))
-        # offset[0] = np.int(offsetPhase[0])
-        # offset[1] = np.int(offsetPhase[1])
-        offsetPhase = cv2.phaseCorrelate(imageA.astype(np.float64), imageB.astype(np.float64))
-        cv2.phase
-        offset[0] = np.int(np.round(offsetPhase[0][0]))
-        offset[1] = np.int(np.round(offsetPhase[0][1]))
-        if offset[0] == offset[1] and offset[0] == 0:
-            status = False
-
-        print(status)
-        print(offset)
+        # phase = phaseCorrelation()
+        offsetList = self.phase.phaseCorrelation(dir1, dir2)
+        # print(offset)
+        # phase.shutdown()
+        offset = []
+        offset.append(np.int(np.round(offsetList[1])))
+        offset.append(np.int(np.round(offsetList[0])))
+        # offset[0] = np.round(offsetList[0])
+        # offset[1] = np.round(offsetList[1])
+        self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
         return (status, offset)
+
+    def calculateOffsetForPhaseCorrleateIncre(self, images):
+        '''
+        Stitch two images
+        :param images: [imageA, imageB]
+        :param registrateMethod: list:
+        :param fuseMethod:
+        :param direction: stitching direction
+        :return:
+        '''
+        (imageA, imageB) = images
+        offset = [0, 0]
+        status = False
+        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int)+ 1
+        iniDirection = self.direction
+        localDirection = iniDirection
+        for i in range(1, maxI):
+            self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI))
+            while(True):
+                # get the roi region of images
+                self.printAndWrite("  localDirection=" + str(localDirection))
+                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first", searchRatio = i * self.roiRatio)
+                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second", searchRatio = i * self.roiRatio)
+
+                # hann = cv2.createHanningWindow(winSize=(roiImageA.shape[1], roiImageA.shape[0]), type=5)
+                # (offsetTemp, response) = cv2.phaseCorrelate(np.float32(roiImageA), np.float32(roiImageB), window=hann)
+                (offsetTemp, response) = cv2.phaseCorrelate(np.float64(roiImageA), np.float64(roiImageB))
+                offset[0] = np.int(offsetTemp[1])
+                offset[1] = np.int(offsetTemp[0])
+                print("offset: " + str(offset))
+                print("respnse: " + str(response))
+                if response > self.phaseResponseThreshold:
+                    status = True
+                if status == True:
+                    break
+                else:
+                    localDirection = self.directionIncrease(localDirection)
+                if localDirection == iniDirection:
+                    break
+            if status == True:
+                if localDirection == 1:
+                    offset[0] = offset[0] + imageA.shape[0] - int(i * self.roiRatio * imageA.shape[0])
+                elif localDirection == 2:
+                    offset[1] = offset[1] + imageA.shape[1] - int(i * self.roiRatio * imageA.shape[1])
+                elif localDirection == 3:
+                    offset[0] = offset[0] - (imageB.shape[0] - int(i * self.roiRatio * imageB.shape[0]))
+                elif localDirection == 4:
+                    offset[1] = offset[1] - (imageB.shape[1] - int(i * self.roiRatio * imageB.shape[1]))
+                self.direction = localDirection
+                break
+        if status == False:
+            return (status, "  The two images can not match")
+        elif status == True:
+            self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
+            return (status, offset)
 
     def calculateOffsetForFeatureSearch(self, images):
         '''
@@ -358,10 +396,6 @@ class Stitcher(Utility.Method):
         elif self.fuseMethod == "optimalSeamLine":
             fuseRegion = imageFusion.fuseByOptimalSeamLine(images, self.direction)
         return fuseRegion
-
-
-
-
 
 
 if __name__=="__main__":
