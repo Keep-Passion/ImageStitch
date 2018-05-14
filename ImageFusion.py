@@ -12,7 +12,7 @@ class ImageFusion(Utility.Method):
         :return:融合后的图像
         '''
         (imageA, imageB) = images
-        # 由于相加后数值溢出，需要转变类型
+        # 由于相加后数值可能溢出，需要转变类型
         fuseRegion = np.uint8((imageA.astype(int) + imageB.astype(int)) / 2)
         return fuseRegion
 
@@ -47,17 +47,31 @@ class ImageFusion(Utility.Method):
         row, col = imageA.shape[:2]
         weightMatA = np.ones(imageA.shape, dtype=np.float32)
         weightMatB = np.ones(imageA.shape, dtype=np.float32)
-        if direction == "horizontal":
-            for i in range(0, col):
-                weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
-                weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
-        elif direction == "vertical":
-            for i in range(0, row):
-                weightMatA[i, :] = weightMatA[i, :] * (row - i) * 1.0 / row
-                weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
 
+        if np.count_nonzero(imageA) / imageA.size > 0.5:
+            # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
+            # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
+            if col < row:
+                print("普通融合-水平方向")
+            # if direction == "horizontal":
+                for i in range(0, col):
+                    weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
+                    weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
+            # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
+            elif row < col:
+                print("普通融合-竖直方向")
+            # elif direction == "vertical":
+                for i in range(0, row):
+                    weightMatA[i, :] = weightMatA[i, :] * (row - i) * 1.0 / row
+                    weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
+        else:
+            # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
+            print("拐角融合")
+            leftCenter = np.sum(imageA[row//2, 0: col//2]);   upCenter = np.sum(imageA[0:row//2, col//2])
+            rightCenter = np.sum(imageA[row//2, col//2:col]); bottomCenter = np.sum(imageA[row//2:row, col//2])
+            pass
         # 测试
-        # print(weightMatA + weightMatB)
+        # print("  Test: " + str(np.unique(np.weightMatA + weightMatB)))
         # print("     The row fo roi region is:" + str(row))
         # print("     The col fo roi region is:" + str(col))
         # if direction == "horizontal":

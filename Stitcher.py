@@ -327,11 +327,11 @@ class Stitcher(Utility.Method):
         (hA, wA) = imageA.shape[:2]
         (hB, wB) = imageB.shape[:2]
         dx = offset[0]; dy = offset[1]
-
-        if abs(dy) >= abs(dx):
-            direction = "horizontal"
-        elif abs(dy) < abs(dx):
-            direction = "vertical"
+        mask = np.zeros(imageB.shape, dtype=np.uint8)
+        # if abs(dy) >= abs(dx):
+        #     direction = "horizontal"
+        # elif abs(dy) < abs(dx):
+        #     direction = "vertical"
 
         if dx >= 0 and dy >= 0:
             # The first image is located at the left top, the second image located at the right bottom
@@ -345,7 +345,7 @@ class Stitcher(Utility.Method):
         elif dx >= 0 and dy < 0:
             # The first image is located at the right top, the second image located at the left bottom
             stitchImage = np.zeros((max(hA, dx + hB), -dy + wA), dtype=np.uint8)
-            roi_ltx = dx; roi_lty = -dy
+            roi_ltx = dx;  roi_lty = -dy
             roi_rbx = hA;  roi_rby = min(-dy + wA, wB)
             stitchImage[0: hA, -dy:-dy + wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
@@ -369,6 +369,9 @@ class Stitcher(Utility.Method):
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
             stitchImage[0: hB, 0: wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
+        # cv2.imshow("roiImageRegionA", roiImageRegionA)
+        # cv2.imshow("roiImageRegionB", roiImageRegionB)
+        # cv2.waitKey(0)
         fuseRegion = self.fuseImage([roiImageRegionA, roiImageRegionB])
         stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
@@ -380,19 +383,27 @@ class Stitcher(Utility.Method):
         imageB[imageB == 0] = imageA[imageB == 0]
         imageFusion = ImageFusion.ImageFusion()
         if self.fuseMethod == "notFuse":
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
             fuseRegion = imageB
         elif self.fuseMethod == "average":
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
             fuseRegion = imageFusion.fuseByAverage(images)
         elif self.fuseMethod == "maximum":
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
             fuseRegion = imageFusion.fuseByMaximum(images)
         elif self.fuseMethod == "minimum":
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
             fuseRegion = imageFusion.fuseByMinimum(images)
         elif self.fuseMethod == "fadeInAndFadeOut":
-            fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images,self.direction)
+            fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images, self.direction)
+        elif self.fuseMethod == "trigonometric":
+            fuseRegion = imageFusion.fuseByTrigonometric(images, self.direction)
         elif self.fuseMethod == "multiBandBlending":
             fuseRegion = imageFusion.fuseByMultiBandBlending(images)
-        elif self.fuseMethod == "trigonometric":
-            fuseRegion = imageFusion.fuseByTrigonometric(images,self.direction)
         elif self.fuseMethod == "optimalSeamLine":
             fuseRegion = imageFusion.fuseByOptimalSeamLine(images, self.direction)
         return fuseRegion

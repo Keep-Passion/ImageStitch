@@ -41,11 +41,11 @@ def stitchWithFeatureSearchImageSet():
     stitcher.directIncre = 0
     # projectAddress = "images\\zirconLarge"
     # outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    projectAddress = "images\\zirconLargeResized_8_INTER_AREA"
-    outputAddress = "result\\" + method + "\\zirconLargeResized_8_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # projectAddress = "images\\zirconSmall"
-    # outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 96, stitcher.calculateOffsetForFeatureSearch,
+    # projectAddress = "images\\zirconLargeResized_8_INTER_AREA"
+    # outputAddress = "result\\" + method + "\\zirconLargeResized_8_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    projectAddress = "images\\zirconSmall"
+    outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 194, stitcher.calculateOffsetForFeatureSearch,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
 if __name__=="__main__":
