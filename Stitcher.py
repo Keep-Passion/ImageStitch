@@ -379,8 +379,8 @@ class Stitcher(Utility.Method):
     def fuseImage(self, images):
         (imageA, imageB) = images
         fuseRegion = np.zeros(imageA.shape, np.uint8)
-        imageA[imageA == 0] = imageB[imageA == 0]
-        imageB[imageB == 0] = imageA[imageB == 0]
+        # imageA[imageA == 0] = imageB[imageA == 0]
+        # imageB[imageB == 0] = imageA[imageB == 0]
         imageFusion = ImageFusion.ImageFusion()
         if self.fuseMethod == "notFuse":
             imageA[imageA == 0] = imageB[imageA == 0]

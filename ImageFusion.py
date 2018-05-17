@@ -48,10 +48,10 @@ class ImageFusion(Utility.Method):
         weightMatA = np.ones(imageA.shape, dtype=np.float32)
         weightMatB = np.ones(imageA.shape, dtype=np.float32)
 
-        if np.count_nonzero(imageA) / imageA.size > 0.5:
+        if np.count_nonzero(imageA) / imageA.size > 0.75:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
-            if col < row:
+            if col <= row:
                 print("普通融合-水平方向")
             # if direction == "horizontal":
                 for i in range(0, col):
@@ -67,32 +67,82 @@ class ImageFusion(Utility.Method):
         else:
             # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
             print("拐角融合")
+            weightMatB_1 = weightMatB.copy()
+            weightMatB_2 = weightMatB.copy()
             leftCenter = np.sum(imageA[row//2, 0: col//2]);   upCenter = np.sum(imageA[0:row//2, col//2])
             rightCenter = np.sum(imageA[row//2, col//2:col]); bottomCenter = np.sum(imageA[row//2:row, col//2])
             if upCenter != 0 and leftCenter != 0 and bottomCenter == 0 and rightCenter == 0:
+                # 重合区域在imageA的上左部分
                 print("上左")
+                rowIndex = 0; colIndex = 0;
+                for i in range(row-1, -1, -1):
+                    if imageA[i, col-1] != 0:
+                        rowIndex = i + 1
+                        break
+                for i in range(col-1, -1, -1):
+                    if imageA[rowIndex, i] != 0:
+                        colIndex = i + 1
+                        break
+                for i in range(rowIndex + 1):
+                    weightMatB_1[rowIndex - i, :] = (rowIndex - i) * 1 / rowIndex
+                for i in range(colIndex + 1):
+                    weightMatB_2[:, colIndex - i] = (colIndex - i) * 1 / colIndex
+                weightMatB = weightMatB_1 * weightMatB_2
+                weightMatA = 1 - weightMatB
             elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
+                # 重合区域在imageA的下左部分
                 print("下左")
+                rowIndex = 0; colIndex = 0;
+                for i in range(row):
+                    if imageA[i, col - 1] != 0:
+                        rowIndex = i - 1
+                        break
+                for i in range(col - 1, -1, -1):
+                    if imageA[rowIndex, i] != 0:
+                        colIndex = i + 1
+                        break
+                for i in range(rowIndex, row):
+                    weightMatB_1[i, :] = (row - i - 1) * 1 / (row - rowIndex - 1)
+                for i in range(colIndex + 1):
+                    weightMatB_2[:, colIndex - i] = (colIndex - i) * 1 / colIndex
+                weightMatB = weightMatB_1 * weightMatB_2
+                weightMatA = 1 - weightMatB
             elif rightCenter != 0 and bottomCenter != 0 and upCenter == 0 and leftCenter == 0:
+                # 重合区域在imageA的下右部分
                 print("下右")
+                rowIndex = 0; colIndex = 0;
+                for i in range(row):
+                    if imageA[i, 0] != 0:
+                        rowIndex = i - 1
+                        break
+                for i in range(col):
+                    if imageA[rowIndex, i] != 0:
+                        colIndex = i - 1
+                        break
+                for i in range(rowIndex, row):
+                    weightMatB_1[i, :] = (row - i - 1) * 1 / (row - rowIndex - 1)
+                for i in range(colIndex, col):
+                    weightMatB_2[:, i] = (col - i - 1) * 1 / (col - colIndex - 1)
+                weightMatB = weightMatB_1 * weightMatB_2
+                weightMatA = 1 - weightMatB
             elif upCenter != 0 and rightCenter != 0 and leftCenter == 0 and bottomCenter == 0:
+                # 重合区域在imageA的上右部分
                 print("上右")
-        # 测试
-        # print("  Test: " + str(np.unique(np.weightMatA + weightMatB)))
-        # print("     The row fo roi region is:" + str(row))
-        # print("     The col fo roi region is:" + str(col))
-        # if direction == "horizontal":
-        #     for i in range(0, col):
-        #         print(weightMatA[0, i])
-        #     print("***")
-        #     for i in range(0, col):
-        #         print(weightMatB[0, i])
-        # elif direction == "vertical":
-        #     for i in range(0, row):
-        #         print(weightMatA[i, 0])
-        #     print("***")
-        #     for i in range(0, row):
-        #         print(weightMatB[i, 0])
+                rowIndex = 0; colIndex = 0;
+                for i in range(row-1, -1, -1):
+                    if imageA[i, 0] != 0:
+                        rowIndex = i + 1
+                        break
+                for i in range(col):
+                    if imageA[rowIndex, i] != 0:
+                        colIndex = i - 1
+                        break
+                for i in range(rowIndex + 1):
+                    weightMatB_1[rowIndex - i, :] = (rowIndex - i) * 1 / rowIndex
+                for i in range(colIndex, col):
+                    weightMatB_2[:, i] = (col - i - 1) * 1 / (col - colIndex - 1)
+                weightMatB = weightMatB_1 * weightMatB_2
+                weightMatA = 1 - weightMatB
         fuseRegion = np.uint8((weightMatA * imageA.astype(np.int)) + (weightMatB * imageB.astype(np.int)))
         return fuseRegion
 
@@ -312,3 +362,20 @@ class ImageFusion(Utility.Method):
                     break
         return drawing
 
+if __name__=="__main__":
+    # 测试
+    num = 6
+    A_1 = np.zeros((num, num), dtype=np.uint8)
+    for i in range(num):
+        for j in range(num):
+            if j < 3:
+                A_1[i, j] = 1
+    for i in range(num):
+        for j in range(num):
+            if i > 3:
+                A_1[i, j] = 1
+
+    print(A_1)
+    A_2 = np.ones((num, num), dtype=np.uint8)
+    imageFusion = ImageFusion()
+    imageFusion.fuseByFadeInAndFadeOut([A_1, A_2], direction="horizontal")
