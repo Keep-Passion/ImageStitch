@@ -69,7 +69,14 @@ class ImageFusion(Utility.Method):
             print("拐角融合")
             leftCenter = np.sum(imageA[row//2, 0: col//2]);   upCenter = np.sum(imageA[0:row//2, col//2])
             rightCenter = np.sum(imageA[row//2, col//2:col]); bottomCenter = np.sum(imageA[row//2:row, col//2])
-            pass
+            if upCenter != 0 and leftCenter != 0 and bottomCenter == 0 and rightCenter == 0:
+                print("上左")
+            elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
+                print("下左")
+            elif rightCenter != 0 and bottomCenter != 0 and upCenter == 0 and leftCenter == 0:
+                print("下右")
+            elif upCenter != 0 and rightCenter != 0 and leftCenter == 0 and bottomCenter == 0:
+                print("上右")
         # 测试
         # print("  Test: " + str(np.unique(np.weightMatA + weightMatB)))
         # print("     The row fo roi region is:" + str(row))
