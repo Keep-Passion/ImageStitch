@@ -399,10 +399,12 @@ class Stitcher(Utility.Method):
             imageB[imageB == 0] = imageA[imageB == 0]
             fuseRegion = imageFusion.fuseByMinimum(images)
         elif self.fuseMethod == "fadeInAndFadeOut":
-            fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images, self.direction)
+            fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images)
         elif self.fuseMethod == "trigonometric":
-            fuseRegion = imageFusion.fuseByTrigonometric(images, self.direction)
+            fuseRegion = imageFusion.fuseByTrigonometric(images)
         elif self.fuseMethod == "multiBandBlending":
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
             fuseRegion = imageFusion.fuseByMultiBandBlending(images)
         elif self.fuseMethod == "optimalSeamLine":
             fuseRegion = imageFusion.fuseByOptimalSeamLine(images, self.direction)
