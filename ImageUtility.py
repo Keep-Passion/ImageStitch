@@ -194,28 +194,28 @@ class Method():
     def rectifyFinalImg(self, image, regionLength = 10):
 
         (h, w) = image.shape
+        print("h:" + str(h))
+        print("w:" + str(w))
         upperLeft   = np.sum(image[0: regionLength, 0: regionLength])
         upperRight  = np.sum(image[0: regionLength, w - regionLength: w])
         bottomLeft  = np.sum(image[h - regionLength: h, 0: regionLength])
         bottomRight = np.sum(image[h - regionLength: h, w - regionLength: w])
+
         # 预处理
         zeroCol = image[:, 0]
         noneZeroNum = np.count_nonzero(zeroCol)
-
         zeroNum = h - noneZeroNum
-        print("h:" + str(h))
-        print("w:" + str(w))
         print("noneZeroNum:" + str(noneZeroNum))
         print("zeroNum:" + str(zeroNum))
         print("除法:" + str(noneZeroNum / h))
-        if (noneZeroNum / h) < 0.5:
+        if (noneZeroNum / h) < 0.3:
             resultImage = image
         elif upperLeft == 0 and bottomRight == 0 and upperRight != 0 and bottomLeft != 0:      # 左边低，右边高
             print(1)
             center = (w // 2, h // 2)
             print(w)
             print(h)
-            angle = math.atan(center[1] / center[0]) * 180 / math.pi
+            angle = math.atan(center[1] / center[0] * 180 / math.pi)
             print(str(angle))
             M = cv2.getRotationMatrix2D(center, -1 * angle, 1.0)
             print(M)
@@ -223,7 +223,7 @@ class Method():
         elif upperLeft != 0 and bottomRight != 0 and upperRight == 0 and bottomLeft == 0:    # 左边高，右边低
             print(2)
             center = (w // 2, h // 2)
-            angle = math.atan(center[1] / center[0]) * 180 / math.pi / 2
+            angle = math.atan(center[1] / center[0] * 180 / math.pi)
             print(str(angle))
             M = cv2.getRotationMatrix2D(center, angle, 1.0)
             resultImage = cv2.warpAffine(image, M, (w, h))
