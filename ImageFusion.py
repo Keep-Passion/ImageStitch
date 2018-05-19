@@ -49,9 +49,17 @@ class ImageFusion(Utility.Method):
         weightMatB_1 = weightMatB.copy()
         weightMatB_2 = weightMatB.copy()
         # 获取四条线的相加和，判断属于哪种模式
-        leftCenter = np.sum(imageA[row // 2, 0: col // 2]);     upCenter = np.sum(imageA[0:row // 2, col // 2])
-        rightCenter = np.sum(imageA[row // 2, col // 2:col]);   bottomCenter = np.sum(imageA[row // 2:row, col // 2])
-        if upCenter != 0 and leftCenter != 0 and bottomCenter == 0 and rightCenter == 0:
+        compareList = []
+        compareList.append(np.count_nonzero(imageA[0: row // 2, 0: col // 2]))
+        compareList.append(np.count_nonzero(imageA[row // 2: row, 0: col // 2]))
+        compareList.append(np.count_nonzero(imageA[row // 2: row, col // 2: col]))
+        compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col]))
+        index = compareList.index(min(compareList))
+        # print(index)
+        # leftCenter = np.sum(imageA[row // 2, 0: col // 2]);     upCenter = np.sum(imageA[0:row // 2, col // 2])
+        # rightCenter = np.sum(imageA[row // 2, col // 2:col]);   bottomCenter = np.sum(imageA[row // 2:row, col // 2])
+        # if upCenter != 0 and leftCenter != 0 and bottomCenter == 0 and rightCenter == 0:
+        if index == 2:
             # 重合区域在imageA的上左部分
             print("上左")
             rowIndex = 0;   colIndex = 0;
@@ -73,7 +81,8 @@ class ImageFusion(Utility.Method):
                 weightMatB_2[:, colIndex - i] = (colIndex - i) * 1 / colIndex
             weightMatB = weightMatB_1 * weightMatB_2
             weightMatA = 1 - weightMatB
-        elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
+        #elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
+        elif index == 3:
             # 重合区域在imageA的下左部分
             print("下左")
             rowIndex = 0;       colIndex = 0;
@@ -95,7 +104,8 @@ class ImageFusion(Utility.Method):
                 weightMatB_2[:, colIndex - i] = (colIndex - i) * 1 / colIndex
             weightMatB = weightMatB_1 * weightMatB_2
             weightMatA = 1 - weightMatB
-        elif rightCenter != 0 and bottomCenter != 0 and upCenter == 0 and leftCenter == 0:
+        # elif rightCenter != 0 and bottomCenter != 0 and upCenter == 0 and leftCenter == 0:
+        elif index == 0:
             # 重合区域在imageA的下右部分
             print("下右")
             rowIndex = 0;
@@ -118,7 +128,8 @@ class ImageFusion(Utility.Method):
                 weightMatB_2[:, i] = (col - i - 1) * 1 / (col - colIndex - 1)
             weightMatB = weightMatB_1 * weightMatB_2
             weightMatA = 1 - weightMatB
-        elif upCenter != 0 and rightCenter != 0 and leftCenter == 0 and bottomCenter == 0:
+        # elif upCenter != 0 and rightCenter != 0 and leftCenter == 0 and bottomCenter == 0:
+        elif index == 1:
             # 重合区域在imageA的上右部分
             print("上右")
             rowIndex = 0;   colIndex = 0;
@@ -139,8 +150,8 @@ class ImageFusion(Utility.Method):
                 weightMatB_2[:, i] = (col - i - 1) * 1 / (col - colIndex - 1)
             weightMatB = weightMatB_1 * weightMatB_2
             weightMatA = 1 - weightMatB
-        print(weightMatA)
-        print(weightMatB)
+        # print(weightMatA)
+        # print(weightMatB)
         return (weightMatA, weightMatB)
 
     def fuseByFadeInAndFadeOut(self, images):
@@ -405,7 +416,7 @@ if __name__=="__main__":
                 A_1[i, j] = 1
     for i in range(num):
         for j in range(num):
-            if i > 3:
+            if i < 3:
                 A_1[i, j] = 1
     # A_1[0, num-1] = 0;A_1[1, num-1] = 0;A_1[2, num-1] = 0;
     # A_1[num-1, 0] = 0;  A_1[num-1, 1] = 0;A_1[num-1, 2] = 0;
