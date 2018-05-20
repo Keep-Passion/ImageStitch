@@ -15,15 +15,44 @@ def stitchWithFeatureIncre():
     Stitcher.fuseMethod = "trigonometric"
     stitcher = Stitcher()
 
+    # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 0;
     # projectAddress = "images\\iron"
     # outputAddress = "result\\" + method + "\\iron" + str.capitalize(Stitcher.fuseMethod) + "\\"
     # stitcher.imageSetStitch(projectAddress, outputAddress, 50, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
-    projectAddress = "images\\dendriticCrystal"
-    outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitch(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearchIncre,
+    # method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
+    # projectAddress = "images\\dendriticCrystal"
+    # outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # stitcher.imageSetStitch(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearchIncre,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+
+    Stitcher.featureMethod = "sift"; Stitcher.searchRatio = 0.75; Stitcher.offsetEvaluate = 2;
+    method = "featureSearch"; # Stitcher.direction = 1;  Stitcher.directIncre = 0;
+    Stitcher.isEnhance = True; Stitcher.isClahe = True;
+    Stitcher.fuseMethod = "notFuse"
+    projectAddress = "images\\superalloyTurbineblade"
+    outputAddress = "result\\" + method + "\\superalloyTurbineblade" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    stitcher.imageSetStitch(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearch,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+
+    # method = "featureSearchIncre"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    # projectAddress = "images\\zirconLarge"
+    # outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 96, stitcher.calculateOffsetForFeatureSearch,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="png")
+
+    # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    # projectAddress = "images\\zirconLargeResized_8_INTER_AREA"
+    # outputAddress = "result\\" + method + "\\zirconLargeResized_8_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 96, stitcher.calculateOffsetForFeatureSearch,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+
+    # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    # projectAddress = "images\\zirconSmall"
+    # outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 194, stitcher.calculateOffsetForFeatureSearch,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
 def stitchWithPhase():
     method = "phaseCorrelate"
@@ -37,4 +66,3 @@ def stitchWithPhase():
 
 if __name__=="__main__":
     stitchWithFeatureIncre()
-    # stitchWithPhase()

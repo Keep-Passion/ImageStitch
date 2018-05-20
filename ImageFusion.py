@@ -50,10 +50,10 @@ class ImageFusion(Utility.Method):
         weightMatB_2 = weightMatB.copy()
         # 获取四条线的相加和，判断属于哪种模式
         compareList = []
-        compareList.append(np.count_nonzero(imageA[0: row // 2, 0: col // 2]))
-        compareList.append(np.count_nonzero(imageA[row // 2: row, 0: col // 2]))
-        compareList.append(np.count_nonzero(imageA[row // 2: row, col // 2: col]))
-        compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col]))
+        compareList.append(np.count_nonzero(imageA[0: row // 2, 0: col // 2]) != -1)
+        compareList.append(np.count_nonzero(imageA[row // 2: row, 0: col // 2]) != -1)
+        compareList.append(np.count_nonzero(imageA[row // 2: row, col // 2: col]) != -1)
+        compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col]) != -1)
         index = compareList.index(min(compareList))
         # print(index)
         # leftCenter = np.sum(imageA[row // 2, 0: col // 2]);     upCenter = np.sum(imageA[0:row // 2, col // 2])
@@ -154,7 +154,7 @@ class ImageFusion(Utility.Method):
         # print(weightMatB)
         return (weightMatA, weightMatB)
 
-    def fuseByFadeInAndFadeOut(self, images):
+    def fuseByFadeInAndFadeOut(self, images, dx, dy):
         '''
         渐入渐出融合
         :param images:输入两个相同区域的图像
@@ -166,33 +166,39 @@ class ImageFusion(Utility.Method):
         weightMatA = np.ones(imageA.shape, dtype=np.float32)
         weightMatB = np.ones(imageA.shape, dtype=np.float32)
 
-        if np.count_nonzero(imageA) / imageA.size > 0.75:
+        if np.count_nonzero(imageA != -1) / imageA.size > 0.75:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
                 print("普通融合-水平方向")
-            # if direction == "horizontal":
                 for i in range(0, col):
-                    weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
-                    weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
+                    if dy <= 0:
+                        weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
+                        weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * i * 1.0 / col
+                    elif dy > 0:
+                        weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
+                        weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
             elif row < col:
                 print("普通融合-竖直方向")
-            # elif direction == "vertical":
                 for i in range(0, row):
-                    weightMatA[i, :] = weightMatA[i, :] * (row - i) * 1.0 / row
-                    weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
+                    if dx <= 0:
+                        weightMatA[i, :] = weightMatA[i, :] * i * 1.0 / row
+                        weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * i * 1.0 / row
+                    elif dx > 0:
+                        weightMatA[i, :] = weightMatA[i, :] * (row - i) * 1.0 / row
+                        weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
         else:
             # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
             print("拐角融合")
             weightMatA, weightMatB = self.getWeightsMatrix(images)
+        imageA[imageA == -1] = 0;   imageB[imageB == -1] =0;
         result = weightMatA * imageA.astype(np.int) + weightMatB * imageB.astype(np.int)
-        result[result < 0] = 0
-        result[result > 255] = 255
+        result[result < 0] = 0;     result[result > 255] = 255
         fuseRegion = np.uint8(result)
         return fuseRegion
 
-    def fuseByTrigonometric(self, images, direction="horizontal"):
+    def fuseByTrigonometric(self, images, dx, dy):
         '''
         三角函数融合
         引用自《一种三角函数权重的图像拼接算法》知网
@@ -204,22 +210,28 @@ class ImageFusion(Utility.Method):
         row, col = imageA.shape[:2]
         weightMatA = np.ones(imageA.shape, dtype=np.float64)
         weightMatB = np.ones(imageA.shape, dtype=np.float64)
-        if np.count_nonzero(imageA) / imageA.size > 0.75:
+        if np.count_nonzero(imageA != -1) / imageA.size > 0.75:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
                 print("普通融合-水平方向")
-            # if direction == "horizontal":
                 for i in range(0, col):
-                    weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
-                    weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
+                    if dy <= 0:
+                        weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
+                        weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * i * 1.0 / col
+                    elif dy > 0:
+                        weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
+                        weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
             elif row < col:
                 print("普通融合-竖直方向")
-            # elif direction == "vertical":
                 for i in range(0, row):
-                    weightMatA[i, :] = weightMatA[i, :] * (row - i) * 1.0 / row
-                    weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
+                    if dx <= 0:
+                        weightMatA[i, :] = weightMatA[i, :] * i * 1.0 / row
+                        weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * i * 1.0 / row
+                    elif dx > 0:
+                        weightMatA[i, :] = weightMatA[i, :] * (row - i) * 1.0 / row
+                        weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
         else:
             # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
             print("拐角融合")
@@ -228,7 +240,10 @@ class ImageFusion(Utility.Method):
         weightMatA = np.power(np.sin(weightMatA * math.pi / 2), 2)
         weightMatB = 1 - weightMatA
 
-        fuseRegion = np.uint8((weightMatA * imageA.astype(np.int)) + (weightMatB * imageB.astype(np.int)))
+        imageA[imageA == -1] = 0;   imageB[imageB == -1] =0;
+        result = weightMatA * imageA.astype(np.int) + weightMatB * imageB.astype(np.int)
+        result[result < 0] = 0;     result[result > 255] = 255
+        fuseRegion = np.uint8(result)
         return fuseRegion
 
     def fuseByMultiBandBlending(self, images):

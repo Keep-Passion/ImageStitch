@@ -138,7 +138,8 @@ class Method():
                 continue
             dxList.append(int(ptA[0] - ptB[0]))
             dyList.append(int(ptA[1] - ptB[1]))
-
+        if len(dxList) == 0:
+            dxList.append(0); dyList.append(0)
         # Get Mode offset in [dxList, dyList], thanks for clovermini
         zipped = zip(dxList, dyList)
         zip_list = list(zipped)

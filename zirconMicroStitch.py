@@ -14,7 +14,7 @@ Stitcher.searchRatio = 0.75          # 0.75 is common value for matches
 Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
 Stitcher.offsetEvaluate = 3        # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
 Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-Stitcher.fuseMethod = "trigonometric"
+Stitcher.fuseMethod = "notFuse"
 Stitcher.direction = 4
 Stitcher.directIncre = 0
 Stitcher.phaseResponseThreshold = 0.1
@@ -35,7 +35,7 @@ def zirconMicroStitchWithEnhance():
 
 def stitchWithFeatureSearchImageSet():
     method = "featureSearch"
-    Stitcher.fuseMethod = "trigonometric"
+    Stitcher.fuseMethod = "fadeInAndFadeOut"
     stitcher = Stitcher()
     stitcher.phaseResponseThreshold = 0.3
     stitcher.directIncre = 0
@@ -46,7 +46,7 @@ def stitchWithFeatureSearchImageSet():
     projectAddress = "images\\zirconSmall"
     outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
     stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 194, stitcher.calculateOffsetForFeatureSearch,
-                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+                            startNum=168, fileExtension="jpg", outputfileExtension="jpg")
 
 if __name__=="__main__":
     stitchWithFeatureSearchImageSet()
