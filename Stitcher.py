@@ -14,13 +14,13 @@ class Stitcher(Utility.Method):
     '''
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
 	'''
-    direction = 1               # 1： 第一张图像在上，第二张图像在下；2： 第一张图像在左，第二张图像在右；
-                                # 3： 第一张图像在下，第二张图像在上；4： 第一张图像在右，第二张图像在左；
+    direction = 1               # 1： 第一张图像在上，第二张图像在下；   2： 第一张图像在左，第二张图像在右；
+                                # 3： 第一张图像在下，第二张图像在上；   4： 第一张图像在右，第二张图像在左；
     directIncre = 1
     featureMethod = "surf"      # "sift","surf" or "orb"
-    searchRatio = 0.75           # 0.75 is common value for matches
+    searchRatio = 0.75          # 0.75 is common value for matches
     offsetCaculate = "mode"     # "mode" or "ransac"
-    offsetEvaluate = 10          # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
+    offsetEvaluate = 10         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     roiRatio = 0.1              # roi length for stitching in first direction
     fuseMethod = "notFuse"
     isEnhance = False
