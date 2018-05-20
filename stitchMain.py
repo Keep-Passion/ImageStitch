@@ -18,22 +18,22 @@ def stitchWithFeatureIncre():
     # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 0;
     # projectAddress = "images\\iron"
     # outputAddress = "result\\" + method + "\\iron" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitch(projectAddress, outputAddress, 50, stitcher.calculateOffsetForFeatureSearchIncre,
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 50, stitcher.calculateOffsetForFeatureSearch,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
     # projectAddress = "images\\dendriticCrystal"
     # outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitch(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearchIncre,
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearch,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
-    Stitcher.featureMethod = "sift"; Stitcher.searchRatio = 0.75; Stitcher.offsetEvaluate = 2;
-    method = "featureSearch"; # Stitcher.direction = 1;  Stitcher.directIncre = 0;
-    Stitcher.isEnhance = True; Stitcher.isClahe = False;
+    Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;
+    method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 1;
+    Stitcher.isEnhance = True;  # Stitcher.isClahe = True;
     Stitcher.fuseMethod = "notFuse"
     projectAddress = "images\\superalloyTurbineblade"
     outputAddress = "result\\" + method + "\\superalloyTurbineblade" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitch(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearch,
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearchIncre,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # method = "featureSearchIncre"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
