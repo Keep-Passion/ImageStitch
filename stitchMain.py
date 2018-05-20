@@ -29,7 +29,7 @@ def stitchWithFeatureIncre():
 
     Stitcher.featureMethod = "sift"; Stitcher.searchRatio = 0.75; Stitcher.offsetEvaluate = 2;
     method = "featureSearch"; # Stitcher.direction = 1;  Stitcher.directIncre = 0;
-    Stitcher.isEnhance = True; Stitcher.isClahe = True;
+    Stitcher.isEnhance = True; Stitcher.isClahe = False;
     Stitcher.fuseMethod = "notFuse"
     projectAddress = "images\\superalloyTurbineblade"
     outputAddress = "result\\" + method + "\\superalloyTurbineblade" + str.capitalize(Stitcher.fuseMethod) + "\\"
