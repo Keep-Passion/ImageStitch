@@ -27,20 +27,20 @@ def stitchWithFeatureIncre():
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearch,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
-    Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;
-    method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 1;
-    Stitcher.isEnhance = True;  # Stitcher.isClahe = True;
-    Stitcher.fuseMethod = "notFuse"
-    projectAddress = "images\\superalloyTurbineblade"
-    outputAddress = "result\\" + method + "\\superalloyTurbineblade" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearchIncre,
-                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    # Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;
+    # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 1;
+    # Stitcher.isEnhance = True;  # Stitcher.isClahe = True;
+    # Stitcher.fuseMethod = "notFuse"
+    # projectAddress = "images\\superalloyTurbineblade"
+    # outputAddress = "result\\" + method + "\\superalloyTurbineblade" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearchIncre,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
-    # method = "featureSearchIncre"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
-    # projectAddress = "images\\zirconLarge"
-    # outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 96, stitcher.calculateOffsetForFeatureSearch,
-    #                         startNum=1, fileExtension="jpg", outputfileExtension="png")
+    method = "featureSearchIncre"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    projectAddress = "images\\zirconLarge"
+    outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
+                            startNum=1, fileExtension="jpg", outputfileExtension="png")
 
     # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
     # projectAddress = "images\\zirconLargeResized_8_INTER_AREA"
