@@ -412,7 +412,7 @@ class Stitcher(Utility.Method):
             imageA[imageA == -1] = imageB[imageA == -1]
             imageB[imageB == -1] = imageA[imageB == -1]
             imageA[imageA == -1] = 0;   imageB[imageB == -1] = 0
-            imageA = imageA.astye(np.uint8);  imageB = imageB.astye(np.uint8);
+            # imageA = imageA.astye(np.uint8);  imageB = imageB.astye(np.uint8);
             fuseRegion = imageFusion.fuseByMultiBandBlending([imageA, imageB])
         elif self.fuseMethod == "optimalSeamLine":
             fuseRegion = imageFusion.fuseByOptimalSeamLine(images, self.direction)

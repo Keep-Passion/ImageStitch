@@ -12,13 +12,13 @@ def stitchWithFeatureIncre():
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-    Stitcher.fuseMethod = "trigonometric"
+    Stitcher.fuseMethod = "notFuse"
     stitcher = Stitcher()
 
     # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 0;
     # projectAddress = "images\\iron"
     # outputAddress = "result\\" + method + "\\iron" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 50, stitcher.calculateOffsetForFeatureSearch,
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 50, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
@@ -36,23 +36,23 @@ def stitchWithFeatureIncre():
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
-    method = "featureSearchIncre"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
-    projectAddress = "images\\zirconLarge"
-    outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
-                            startNum=1, fileExtension="jpg", outputfileExtension="png")
+    # method = "featureSearchIncre"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    # projectAddress = "images\\zirconLarge"
+    # outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearchIncre,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="png")
 
     # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
     # projectAddress = "images\\zirconLargeResized_8_INTER_AREA"
     # outputAddress = "result\\" + method + "\\zirconLargeResized_8_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 96, stitcher.calculateOffsetForFeatureSearch,
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
-    # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
-    # projectAddress = "images\\zirconSmall"
-    # outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 194, stitcher.calculateOffsetForFeatureSearch,
-    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    projectAddress = "images\\zirconSmall"
+    outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 194, stitcher.calculateOffsetForFeatureSearch,
+                            startNum=43, fileExtension="jpg", outputfileExtension="jpg")
 
 def stitchWithPhase():
     method = "phaseCorrelate"
@@ -61,7 +61,7 @@ def stitchWithPhase():
     projectAddress = "images\\zirconSmall"
     outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
     stitcher.imageSetStitch(projectAddress, outputAddress, 51, stitcher.calculateOffsetForPhaseCorrleate,
-                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+                            startNum=43, fileExtension="jpg", outputfileExtension="jpg")
     Stitcher.phase.shutdown()
 
 if __name__=="__main__":
