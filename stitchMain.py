@@ -12,7 +12,7 @@ def stitchWithFeatureIncre():
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-    Stitcher.fuseMethod = "notFuse"
+    Stitcher.fuseMethod = "average"
     stitcher = Stitcher()
 
     # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 0;
@@ -51,7 +51,7 @@ def stitchWithFeatureIncre():
     method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
     projectAddress = "images\\zirconSmall"
     outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 59, stitcher.calculateOffsetForFeatureSearch,
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 194, stitcher.calculateOffsetForFeatureSearch,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
 def stitchWithPhase():
