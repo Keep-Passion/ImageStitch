@@ -8,7 +8,6 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
-from phasecorrelation import *
 
 class Stitcher(Utility.Method):
     '''
@@ -28,7 +27,6 @@ class Stitcher(Utility.Method):
     clipLimit = 20
     tileSize = 5
     phaseResponseThreshold = 0.15
-    phase = phaseCorrelation()
     overlapRatio = []
 
     def directionIncrease(self, direction):
