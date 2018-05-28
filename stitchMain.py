@@ -25,7 +25,7 @@ def stitchWithFeatureIncre():
     projectAddress = "images\\dendriticCrystal"
     outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
     stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearchIncre,
-                            startNum=3, fileExtension="jpg", outputfileExtension="jpg")
+                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;
     # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 1;
@@ -41,12 +41,12 @@ def stitchWithFeatureIncre():
     # outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="png")
-
-    method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
-    projectAddress = "images\\zirconLargeResized_4_INTER_AREA"
-    outputAddress = "result\\" + method + "\\zirconLargeResized_4_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
-                            startNum=67, fileExtension="jpg", outputfileExtension="jpg")
+    #
+    # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    # projectAddress = "images\\zirconLargeResized_4_INTER_AREA"
+    # outputAddress = "result\\" + method + "\\zirconLargeResized_4_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
+    #                         startNum=67, fileExtension="jpg", outputfileExtension="jpg")
 
     # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
     # projectAddress = "images\\zirconSmall"
