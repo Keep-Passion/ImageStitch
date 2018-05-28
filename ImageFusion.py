@@ -56,10 +56,6 @@ class ImageFusion(Utility.Method):
         compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col] > 0))
         print(compareList)
         index = compareList.index(min(compareList))
-        # print(index)
-        # leftCenter = np.sum(imageA[row // 2, 0: col // 2]);     upCenter = np.sum(imageA[0:row // 2, col // 2])
-        # rightCenter = np.sum(imageA[row // 2, col // 2:col]);   bottomCenter = np.sum(imageA[row // 2:row, col // 2])
-        # if upCenter != 0 and leftCenter != 0 and bottomCenter == 0 and rightCenter == 0:
         if index == 2:
             # 重合区域在imageA的上左部分
             print("上左")
