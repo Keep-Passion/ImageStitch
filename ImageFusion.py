@@ -50,10 +50,11 @@ class ImageFusion(Utility.Method):
         weightMatB_2 = weightMatB.copy()
         # 获取四条线的相加和，判断属于哪种模式
         compareList = []
-        compareList.append(np.count_nonzero(imageA[0: row // 2, 0: col // 2]) > 0)
-        compareList.append(np.count_nonzero(imageA[row // 2: row, 0: col // 2]) > 0)
-        compareList.append(np.count_nonzero(imageA[row // 2: row, col // 2: col]) > 0)
-        compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col]) > 0)
+        compareList.append(np.count_nonzero(imageA[0: row // 2, 0: col // 2] > 0))
+        compareList.append(np.count_nonzero(imageA[row // 2: row, 0: col // 2] > 0))
+        compareList.append(np.count_nonzero(imageA[row // 2: row, col // 2: col] > 0))
+        compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col] > 0))
+        print(compareList)
         index = compareList.index(min(compareList))
         # print(index)
         # leftCenter = np.sum(imageA[row // 2, 0: col // 2]);     upCenter = np.sum(imageA[0:row // 2, col // 2])
