@@ -167,7 +167,7 @@ class ImageFusion(Utility.Method):
         weightMatA = np.ones(imageA.shape, dtype=np.float32)
         weightMatB = np.ones(imageA.shape, dtype=np.float32)
         print("ratio: "  + str(np.count_nonzero(imageA > 0) / imageA.size))
-        if np.count_nonzero(imageA > 0) / imageA.size > 0.75:
+        if np.count_nonzero(imageA > 0) / imageA.size > 0.65:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
@@ -212,7 +212,7 @@ class ImageFusion(Utility.Method):
         weightMatA = np.ones(imageA.shape, dtype=np.float64)
         weightMatB = np.ones(imageA.shape, dtype=np.float64)
         print("ratio: " + str(np.count_nonzero(imageA > 0) / imageA.size))
-        if np.count_nonzero(imageA > 0) / imageA.size > 0.75:
+        if np.count_nonzero(imageA > 0) / imageA.size > 0.65:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
