@@ -8,7 +8,6 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
-from phasecorrelation import *
 
 class Stitcher(Utility.Method):
     '''
@@ -28,7 +27,6 @@ class Stitcher(Utility.Method):
     clipLimit = 20
     tileSize = 5
     phaseResponseThreshold = 0.15
-    phase = phaseCorrelation()
     overlapRatio = []
 
     def directionIncrease(self, direction):
@@ -385,24 +383,28 @@ class Stitcher(Utility.Method):
         # cv2.imshow("B", imageB)
         # cv2.waitKey(0)
         fuseRegion = np.zeros(imageA.shape, np.uint8)
-        # imageA[imageA == 0] = imageB[imageA == 0]
-        # imageB[imageB == 0] = imageA[imageB == 0]
         imageFusion = ImageFusion.ImageFusion()
         if self.fuseMethod == "notFuse":
             imageB[imageA == -1] = imageB[imageA == -1]
             imageA[imageB == -1] = imageA[imageB == -1]
             fuseRegion = imageB
         elif self.fuseMethod == "average":
-            imageA[imageA == -1] = imageB[imageA == -1]
-            imageB[imageB == -1] = imageA[imageB == -1]
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
+            imageA[imageA == -1] = 0
+            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByAverage([imageA, imageB])
         elif self.fuseMethod == "maximum":
-            imageA[imageA == -1] = imageB[imageA == -1]
-            imageB[imageB == -1] = imageA[imageB == -1]
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
+            imageA[imageA == -1] = 0
+            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByMaximum([imageA, imageB])
         elif self.fuseMethod == "minimum":
-            imageA[imageA == -1] = imageB[imageA == -1]
-            imageB[imageB == -1] = imageA[imageB == -1]
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
+            imageA[imageA == -1] = 0
+            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByMinimum([imageA, imageB])
         elif self.fuseMethod == "fadeInAndFadeOut":
             fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images, dx, dy)
