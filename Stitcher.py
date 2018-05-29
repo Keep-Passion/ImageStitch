@@ -393,16 +393,22 @@ class Stitcher(Utility.Method):
             imageA[imageB == -1] = imageA[imageB == -1]
             fuseRegion = imageB
         elif self.fuseMethod == "average":
-            imageA[imageA == -1] = imageB[imageA == -1]
-            imageB[imageB == -1] = imageA[imageB == -1]
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
+            imageA[imageA == -1] = 0
+            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByAverage([imageA, imageB])
         elif self.fuseMethod == "maximum":
-            imageA[imageA == -1] = imageB[imageA == -1]
-            imageB[imageB == -1] = imageA[imageB == -1]
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
+            imageA[imageA == -1] = 0
+            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByMaximum([imageA, imageB])
         elif self.fuseMethod == "minimum":
-            imageA[imageA == -1] = imageB[imageA == -1]
-            imageB[imageB == -1] = imageA[imageB == -1]
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
+            imageA[imageA == -1] = 0
+            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByMinimum([imageA, imageB])
         elif self.fuseMethod == "fadeInAndFadeOut":
             fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images, dx, dy)
