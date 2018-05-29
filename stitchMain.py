@@ -12,7 +12,7 @@ def stitchWithFeatureIncre():
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-    Stitcher.fuseMethod = "fadeInAndFadeOut"
+    Stitcher.fuseMethod = "multiBandBlending"
     stitcher = Stitcher()
 
     # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 0;
@@ -41,18 +41,18 @@ def stitchWithFeatureIncre():
     # outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="png")
-    #
+
     # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
     # projectAddress = "images\\zirconLargeResized_4_INTER_AREA"
     # outputAddress = "result\\" + method + "\\zirconLargeResized_4_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
-    #                         startNum=67, fileExtension="jpg", outputfileExtension="jpg")
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
     # projectAddress = "images\\zirconSmall"
     # outputAddress = "result\\" + method + "\\zirconSmall" + str.capitalize(Stitcher.fuseMethod) + "\\"
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 194, stitcher.calculateOffsetForFeatureSearch,
-    #                         startNum=43, fileExtension="jpg", outputfileExtension="jpg")
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
 def stitchWithPhase():
     method = "phaseCorrelate"

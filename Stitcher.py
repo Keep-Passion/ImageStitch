@@ -409,9 +409,10 @@ class Stitcher(Utility.Method):
         elif self.fuseMethod == "trigonometric":
             fuseRegion = imageFusion.fuseByTrigonometric(images, dx, dy)
         elif self.fuseMethod == "multiBandBlending":
-            imageA[imageA == -1] = imageB[imageA == -1]
-            imageB[imageB == -1] = imageA[imageB == -1]
-            imageA[imageA == -1] = 0;   imageB[imageB == -1] = 0
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
+            imageA[imageA == -1] = 0
+            imageB[imageB == -1] = 0
             # imageA = imageA.astye(np.uint8);  imageB = imageB.astye(np.uint8);
             fuseRegion = imageFusion.fuseByMultiBandBlending([imageA, imageB])
         elif self.fuseMethod == "optimalSeamLine":
