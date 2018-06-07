@@ -4,15 +4,13 @@ import time
 import glob
 import os
 
-
 def stitchWithFeatureIncre():
-    method = "featureSearchIncre"
     Stitcher.featureMethod = "surf"     # "sift","surf" or "orb"
     Stitcher.searchRatio = 0.75         # 0.75 is common value for matches
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-    Stitcher.fuseMethod = "multiBandBlending"
+    Stitcher.fuseMethod = "notFuse"
     stitcher = Stitcher()
 
     # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 0;
@@ -21,11 +19,11 @@ def stitchWithFeatureIncre():
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 50, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
-    method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
-    projectAddress = "images\\dendriticCrystal"
-    outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearchIncre,
-                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    # method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
+    # projectAddress = "images\\dendriticCrystal"
+    # outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearchIncre,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;
     # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 1;
@@ -42,11 +40,11 @@ def stitchWithFeatureIncre():
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="png")
 
-    # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
-    # projectAddress = "images\\zirconLargeResized_4_INTER_AREA"
-    # outputAddress = "result\\" + method + "\\zirconLargeResized_4_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
-    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    projectAddress = "images\\zirconLargeResized_4_INTER_AREA"
+    outputAddress = "result\\" + method + "\\zirconLargeResized_4_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
+                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
     # projectAddress = "images\\zirconSmall"

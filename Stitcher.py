@@ -10,6 +10,13 @@ import ImageUtility as Utility
 import ImageFusion
 from phasecorrelation import *
 
+class ImageFeature():
+    # 用来保存串行全局拼接中的第二张图像的特征点和描述子，为后续加速拼接使用
+    isBreak = True      # 判断是否上一次中断
+    kps = None
+    feature = None
+
+
 class Stitcher(Utility.Method):
     '''
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
@@ -30,6 +37,7 @@ class Stitcher(Utility.Method):
     phaseResponseThreshold = 0.15
     phase = phaseCorrelation()
     overlapRatio = []
+    tempImageFeature = ImageFeature()
 
     def directionIncrease(self, direction):
         direction += self.directIncre
@@ -105,6 +113,7 @@ class Stitcher(Utility.Method):
         while 1:
             (status, stitchResult) = self.flowStitch(fileList[startNum: totalNum], caculateOffsetMethod)
             result.append(stitchResult)
+            self.tempImageFeature.isBreak = True
             if status[1] == 1:
                 startNum = startNum + status[1] + 1
             else:
@@ -118,7 +127,6 @@ class Stitcher(Utility.Method):
                 result.append(cv2.imread(fileList[startNum], 0))
                 break
             self.printAndWrite("stitching Break, start from " + str(fileList[startNum]) + " again")
-
         return result
 
     def imageSetStitch(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
@@ -129,7 +137,7 @@ class Stitcher(Utility.Method):
                 os.makedirs(outputAddress)
             Stitcher.outputAddress = outputAddress
             (status, result) = self.flowStitch(fileList, caculateOffsetMethod)
-            #if status == True:
+            self.tempImageFeature.isBreak = True
             cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "." + outputfileExtension, result)
             if status == False:
                 print("stitching Failed")
@@ -142,8 +150,7 @@ class Stitcher(Utility.Method):
                 os.makedirs(outputAddress)
             Stitcher.outputAddress = outputAddress
             result = self.flowStitchWithMutiple(fileList, caculateOffsetMethod)
-            # outputName = fileList[0].split("\\")[-1][0 : -7]
-            # print("---------------------------" + outputName)
+            self.tempImageFeature.isBreak = True
             if len(result) == 1:
                 cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "." + outputfileExtension, result[0])
                 # cv2.imwrite(outputAddress + "\\" + outputName + "." + outputfileExtension, result[0])
@@ -244,8 +251,20 @@ class Stitcher(Utility.Method):
                 imageA = cv2.equalizeHist(imageA)
                 imageB = cv2.equalizeHist(imageB)
         # get the feature points
-        (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
-        (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+        if self.tempImageFeature.isBreak == True:
+            (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
+            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            self.tempImageFeature.isBreak = False
+            self.tempImageFeature.kps = kpsB
+            self.tempImageFeature.feature = featuresB
+        else:
+            kpsA = self.tempImageFeature.kps
+            featuresA = self.tempImageFeature.feature
+            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            self.tempImageFeature.isBreak = False
+            self.tempImageFeature.kps = kpsB
+            self.tempImageFeature.feature = featuresB
+
         if featuresA is not None and featuresB is not None:
             matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
             # match all the feature points
@@ -254,8 +273,10 @@ class Stitcher(Utility.Method):
             elif self.offsetCaculate == "ransac":
                 (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
         if status == False:
+            self.tempImageFeature.isBreak = True
             return (status, "  The two images can not match")
         elif status == True:
+            self.tempImageFeature.isBreak = False
             self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
             return (status, offset)
 
@@ -268,6 +289,7 @@ class Stitcher(Utility.Method):
         :param direction: stitching direction
         :return:
         '''
+
         (imageA, imageB) = images
         offset = [0, 0]
         status = False
