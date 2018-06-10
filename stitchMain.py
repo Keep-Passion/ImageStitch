@@ -6,7 +6,7 @@ import os
 
 def stitchWithFeature():
     Stitcher.featureMethod = "surf"     # "sift","surf" or "orb"
-    Stitcher.isGPUAvailable = False
+    Stitcher.isGPUAvailable = True
     Stitcher.searchRatio = 0.75         # 0.75 is common value for matches
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac

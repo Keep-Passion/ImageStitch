@@ -365,9 +365,12 @@ class Stitcher(Utility.Method):
                 else:
                     (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
                     (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
+                print("kpsA.shape:" + str(len(kpsA)))
+                print("kpsB.shape:" + str(len(kpsB)))
                 if featuresA is not None and featuresB is not None:
                     if self.isGPUAvailable == True:
                         matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
+                        print("matches.shape:" + str(len(matches)))
                     else:
                         matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
                     # match all the feature points
