@@ -8,6 +8,7 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
+import myGpuSurf
 from phasecorrelation import *
 
 class ImageFeature():
@@ -38,6 +39,31 @@ class Stitcher(Utility.Method):
     phase = phaseCorrelation()
     overlapRatio = []
     tempImageFeature = ImageFeature()
+    isGPUAvailable = True
+
+    def npToListForKeypoints(self, array):
+        '''
+        Convert array to List, used for keypoints from GPUDLL to python List
+        :param array: array from GPUDLL
+        :return:
+        '''
+        kps = []
+        row, col = array.shape
+        for i in range(row):
+            kps.append([array[i, 0], array[i, 1]])
+        return kps
+
+    def npToListForMatches(self, array):
+        '''
+        Convert array to List, used for DMatches from GPUDLL to python List
+        :param array: array from GPUDLL
+        :return:
+        '''
+        descritpors = []
+        row, col = array.shape
+        for i in range(row):
+            descritpors.append((array[i, 0], array[i, 1]))
+        return descritpors
 
     def directionIncrease(self, direction):
         direction += self.directIncre
@@ -203,8 +229,8 @@ class Stitcher(Utility.Method):
                 (offsetTemp, response) = cv2.phaseCorrelate(np.float64(roiImageA), np.float64(roiImageB))
                 offset[0] = np.int(offsetTemp[1])
                 offset[1] = np.int(offsetTemp[0])
-                print("offset: " + str(offset))
-                print("respnse: " + str(response))
+                self.printAndWrite("offset: " + str(offset))
+                self.printAndWrite("respnse: " + str(response))
                 if response > self.phaseResponseThreshold:
                     status = True
                 if status == True:
@@ -252,21 +278,38 @@ class Stitcher(Utility.Method):
                 imageB = cv2.equalizeHist(imageB)
         # get the feature points
         if self.tempImageFeature.isBreak == True:
-            (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
-            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            if self.isGPUAvailable == True:
+                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.searchRatio)
+                kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
+                featuresA = myGpuSurf.getImageADescriptors()
+                kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
+                featuresB = myGpuSurf.getImageBDescriptors()
+            else:
+                (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
+                (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
         else:
             kpsA = self.tempImageFeature.kps
             featuresA = self.tempImageFeature.feature
-            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            if self.isGPUAvailable == True:
+                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.searchRatio)
+                kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
+                featuresB = myGpuSurf.getImageBDescriptors()
+            else:
+                (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
-
+        print("kpsA.shape:" + str(len(kpsA)))
+        print("kpsB.shape:" + str(len(kpsB)))
         if featuresA is not None and featuresB is not None:
-            matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+            if self.isGPUAvailable == True:
+                matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
+                print("matches.shape:" + str(len(matches)))
+            else:
+                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
             # match all the feature points
             if self.offsetCaculate == "mode":
                 (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
@@ -313,10 +356,20 @@ class Stitcher(Utility.Method):
                         roiImageA = cv2.equalizeHist(roiImageA)
                         roiImageB = cv2.equalizeHist(roiImageB)
                 # get the feature points
-                (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
-                (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
+                if self.isGPUAvailable == True:
+                    myGpuSurf.matchFeaturesBySurf(roiImageA, roiImageB, self.searchRatio)
+                    kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
+                    featuresA = myGpuSurf.getImageADescriptors()
+                    kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
+                    featuresB = myGpuSurf.getImageBDescriptors()
+                else:
+                    (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
+                    (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
                 if featuresA is not None and featuresB is not None:
-                    matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+                    if self.isGPUAvailable == True:
+                        matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
+                    else:
+                        matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
                     # match all the feature points
                     if self.offsetCaculate == "mode":
                         (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)

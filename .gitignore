@@ -4,3 +4,4 @@
 images/
 result/
 __pycache__/
+.pyc
