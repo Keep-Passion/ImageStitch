@@ -54,11 +54,11 @@ class ImageFusion(Utility.Method):
         compareList.append(np.count_nonzero(imageA[row // 2: row, 0: col // 2] > 0))
         compareList.append(np.count_nonzero(imageA[row // 2: row, col // 2: col] > 0))
         compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col] > 0))
-        print(compareList)
+        self.printAndWrite(compareList)
         index = compareList.index(min(compareList))
         if index == 2:
             # 重合区域在imageA的上左部分
-            print("上左")
+            self.printAndWrite("上左")
             rowIndex = 0;   colIndex = 0;
             for j in range(1, col):
                 for i in range(row - 1, -1, -1):
@@ -85,7 +85,7 @@ class ImageFusion(Utility.Method):
         #elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
         elif index == 3:
             # 重合区域在imageA的下左部分
-            print("下左")
+            self.printAndWrite("下左")
             rowIndex = 0;       colIndex = 0;
             for j in range(1, col):
                 for i in range(row):
@@ -112,7 +112,7 @@ class ImageFusion(Utility.Method):
         # elif rightCenter != 0 and bottomCenter != 0 and upCenter == 0 and leftCenter == 0:
         elif index == 0:
             # 重合区域在imageA的下右部分
-            print("下右")
+            self.printAndWrite("下右")
             rowIndex = 0;
             colIndex = 0;
             for j in range(0, col):
@@ -140,7 +140,7 @@ class ImageFusion(Utility.Method):
         # elif upCenter != 0 and rightCenter != 0 and leftCenter == 0 and bottomCenter == 0:
         elif index == 1:
             # 重合区域在imageA的上右部分
-            print("上右")
+            self.printAndWrite("上右")
             rowIndex = 0;   colIndex = 0;
             for j in range(0, col):
                 for i in range(row - 1, -1, -1):
@@ -178,12 +178,12 @@ class ImageFusion(Utility.Method):
         row, col = imageA.shape[:2]
         weightMatA = np.ones(imageA.shape, dtype=np.float32)
         weightMatB = np.ones(imageA.shape, dtype=np.float32)
-        print("ratio: "  + str(np.count_nonzero(imageA > 0) / imageA.size))
+        self.printAndWrite("ratio: "  + str(np.count_nonzero(imageA > 0) / imageA.size))
         if np.count_nonzero(imageA > 0) / imageA.size > 0.65:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
-                print("普通融合-水平方向")
+                self.printAndWrite("普通融合-水平方向")
                 for i in range(0, col):
                     if dy <= 0:
                         weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
@@ -193,7 +193,7 @@ class ImageFusion(Utility.Method):
                         weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
             elif row < col:
-                print("普通融合-竖直方向")
+                self.printAndWrite("普通融合-竖直方向")
                 for i in range(0, row):
                     if dx <= 0:
                         weightMatA[i, :] = weightMatA[i, :] * i * 1.0 / row
@@ -203,7 +203,7 @@ class ImageFusion(Utility.Method):
                         weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
         else:
             # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
-            print("拐角融合")
+            self.printAndWrite("拐角融合")
             weightMatA, weightMatB = self.getWeightsMatrix(images)
         imageA[imageA == -1] = 0;   imageB[imageB == -1] =0;
         result = weightMatA * imageA.astype(np.int) + weightMatB * imageB.astype(np.int)
@@ -223,12 +223,12 @@ class ImageFusion(Utility.Method):
         row, col = imageA.shape[:2]
         weightMatA = np.ones(imageA.shape, dtype=np.float64)
         weightMatB = np.ones(imageA.shape, dtype=np.float64)
-        print("ratio: " + str(np.count_nonzero(imageA > 0) / imageA.size))
+        self.printAndWrite("ratio: " + str(np.count_nonzero(imageA > 0) / imageA.size))
         if np.count_nonzero(imageA > 0) / imageA.size > 0.65:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
-                print("普通融合-水平方向")
+                self.printAndWrite("普通融合-水平方向")
                 for i in range(0, col):
                     if dy <= 0:
                         weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
@@ -238,7 +238,7 @@ class ImageFusion(Utility.Method):
                         weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
             elif row < col:
-                print("普通融合-竖直方向")
+                self.printAndWrite("普通融合-竖直方向")
                 for i in range(0, row):
                     if dx <= 0:
                         weightMatA[i, :] = weightMatA[i, :] * i * 1.0 / row
@@ -248,7 +248,7 @@ class ImageFusion(Utility.Method):
                         weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
         else:
             # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
-            print("拐角融合")
+            self.printAndWrite("拐角融合")
             weightMatA, weightMatB = self.getWeightsMatrix(images)
 
         weightMatA = np.power(np.sin(weightMatA * math.pi / 2), 2)

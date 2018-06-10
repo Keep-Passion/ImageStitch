@@ -5,3 +5,4 @@ images/
 result/
 .cache/
 __pycache__/
+.pyc
