@@ -8,6 +8,7 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
+import myGpuSurf
 
 class ImageFeature():
     # 用来保存串行全局拼接中的第二张图像的特征点和描述子，为后续加速拼接使用
@@ -36,6 +37,32 @@ class Stitcher(Utility.Method):
     phaseResponseThreshold = 0.15
     overlapRatio = []
     tempImageFeature = ImageFeature()
+    isGPUAvailable = True
+    keypointsRatio = 0.005
+
+    def npToListForKeypoints(self, array):
+        '''
+        Convert array to List, used for keypoints from GPUDLL to python List
+        :param array: array from GPUDLL
+        :return:
+        '''
+        kps = []
+        row, col = array.shape
+        for i in range(row):
+            kps.append([array[i, 0], array[i, 1]])
+        return kps
+
+    def npToListForMatches(self, array):
+        '''
+        Convert array to List, used for DMatches from GPUDLL to python List
+        :param array: array from GPUDLL
+        :return:
+        '''
+        descritpors = []
+        row, col = array.shape
+        for i in range(row):
+            descritpors.append((array[i, 0], array[i, 1]))
+        return descritpors
 
     def directionIncrease(self, direction):
         direction += self.directIncre
@@ -117,8 +144,8 @@ class Stitcher(Utility.Method):
             else:
                 startNum = startNum + status[1] + 1
 
-            print("status[1] = " + str(status[1]))
-            print("startNum = "+str(startNum))
+            self.printAndWrite("status[1] = " + str(status[1]))
+            self.printAndWrite("startNum = "+str(startNum))
             if startNum == totalNum:
                 break
             if startNum == (totalNum - 1):
@@ -138,7 +165,7 @@ class Stitcher(Utility.Method):
             self.tempImageFeature.isBreak = True
             cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "." + outputfileExtension, result)
             if status == False:
-                print("stitching Failed")
+                self.printAndWrite("stitching Failed")
 
     def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
         for i in range(startNum, fileNum+1):
@@ -201,8 +228,8 @@ class Stitcher(Utility.Method):
                 (offsetTemp, response) = cv2.phaseCorrelate(np.float64(roiImageA), np.float64(roiImageB))
                 offset[0] = np.int(offsetTemp[1])
                 offset[1] = np.int(offsetTemp[0])
-                print("offset: " + str(offset))
-                print("respnse: " + str(response))
+                self.printAndWrite("offset: " + str(offset))
+                self.printAndWrite("respnse: " + str(response))
                 if response > self.phaseResponseThreshold:
                     status = True
                 if status == True:
@@ -250,21 +277,35 @@ class Stitcher(Utility.Method):
                 imageB = cv2.equalizeHist(imageB)
         # get the feature points
         if self.tempImageFeature.isBreak == True:
-            (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
-            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            if self.isGPUAvailable == True:
+                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.keypointsRatio, self.searchRatio)
+                kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
+                featuresA = myGpuSurf.getImageADescriptors()
+                kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
+                featuresB = myGpuSurf.getImageBDescriptors()
+            else:
+                (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
+                (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
         else:
             kpsA = self.tempImageFeature.kps
             featuresA = self.tempImageFeature.feature
-            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            if self.isGPUAvailable == True:
+                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.searchRatio)
+                kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
+                featuresB = myGpuSurf.getImageBDescriptors()
+            else:
+                (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
-
         if featuresA is not None and featuresB is not None:
-            matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+            if self.isGPUAvailable == True:
+                matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
+            else:
+                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
             # match all the feature points
             if self.offsetCaculate == "mode":
                 (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
@@ -311,10 +352,20 @@ class Stitcher(Utility.Method):
                         roiImageA = cv2.equalizeHist(roiImageA)
                         roiImageB = cv2.equalizeHist(roiImageB)
                 # get the feature points
-                (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
-                (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
+                if self.isGPUAvailable == True:
+                    myGpuSurf.matchFeaturesBySurf(roiImageA, roiImageB, self.keypointsRatio, self.searchRatio)
+                    kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
+                    featuresA = myGpuSurf.getImageADescriptors()
+                    kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
+                    featuresB = myGpuSurf.getImageBDescriptors()
+                else:
+                    (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
+                    (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
                 if featuresA is not None and featuresB is not None:
-                    matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+                    if self.isGPUAvailable == True:
+                        matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
+                    else:
+                        matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
                     # match all the feature points
                     if self.offsetCaculate == "mode":
                         (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
@@ -349,10 +400,6 @@ class Stitcher(Utility.Method):
         (hB, wB) = imageB.shape[:2]
         dx = offset[0]; dy = offset[1]
         mask = np.zeros(imageB.shape, dtype=np.uint8)
-        # if abs(dy) >= abs(dx):
-        #     direction = "horizontal"
-        # elif abs(dy) < abs(dx):
-        #     direction = "vertical"
 
         if dx >= 0 and dy >= 0:
             # The first image is located at the left top, the second image located at the right bottom
@@ -405,6 +452,8 @@ class Stitcher(Utility.Method):
         # cv2.imshow("B", imageB)
         # cv2.waitKey(0)
         fuseRegion = np.zeros(imageA.shape, np.uint8)
+        # imageA[imageA == 0] = imageB[imageA == 0]
+        # imageB[imageB == 0] = imageA[imageB == 0]
         imageFusion = ImageFusion.ImageFusion()
         if self.fuseMethod == "notFuse":
             imageB[imageA == -1] = imageB[imageA == -1]
