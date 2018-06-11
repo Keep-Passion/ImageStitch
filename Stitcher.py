@@ -8,7 +8,7 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
-import myGpuSurf
+#import myGpuSurf
 from phasecorrelation import *
 
 class ImageFeature():
@@ -105,27 +105,28 @@ class Stitcher(Utility.Method):
         # stitching and fusing
         self.printAndWrite("start stitching")
         startTime = time.time()
-        dxSum = 0;
-        dySum = 0
-        stitchImage = cv2.imread(fileList[0], 0)
-        offsetListNum = len(offsetList)
-
-        for fileIndex in range(0, offsetListNum):
-            self.printAndWrite("  stitching " + str(fileList[fileIndex + 1]))
-            imageB = cv2.imread(fileList[fileIndex + 1], 0)
-            dxSum = offsetList[fileIndex][0] + dxSum
-            dySum = offsetList[fileIndex][1] + dySum
-            offset = [dxSum, dySum]
-            self.printAndWrite("  The offsetX is " + str(offsetList[fileIndex][0]) + " and the offsetY is " + str(
-                offsetList[fileIndex][1]))
-            self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
-            (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB) = self.getStitchByOffset(
-                [stitchImage, imageB], offset)
-            if dxSum < 0:
-                dxSum = 0
-            if dySum < 0:
-                dySum = 0
-
+        #   old stitching method
+        # dxSum = 0
+        # dySum = 0
+        # stitchImage = cv2.imread(fileList[0], 0)
+        # offsetListNum = len(offsetList)
+        #
+        # for fileIndex in range(0, offsetListNum):
+        #     self.printAndWrite("  stitching " + str(fileList[fileIndex + 1]))
+        #     imageB = cv2.imread(fileList[fileIndex + 1], 0)
+        #     dxSum = offsetList[fileIndex][0] + dxSum
+        #     dySum = offsetList[fileIndex][1] + dySum
+        #     offset = [dxSum, dySum]
+        #     self.printAndWrite("  The offsetX is " + str(offsetList[fileIndex][0]) + " and the offsetY is " + str(
+        #         offsetList[fileIndex][1]))
+        #     self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
+        #     (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB) = self.getStitchByOffset(
+        #         [stitchImage, imageB], offset)
+        #     if dxSum < 0:
+        #         dxSum = 0
+        #     if dySum < 0:
+        #         dySum = 0
+        stitchImage = self.getStitchByOffsetNew(fileList, offsetList)
         endTime = time.time()
         self.printAndWrite("The time of fusing is " + str(endTime - startTime) + "s")
 
@@ -447,6 +448,62 @@ class Stitcher(Utility.Method):
         stitchImage[stitchImage == -1] = 0
         stitchImage = stitchImage.astype(np.uint8)
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
+
+    def getStitchByOffsetNew(self, fileList, offsetList):
+        dxSum = 0
+        dySum = 0
+        imageList = []
+        imageList.append(cv2.imread(fileList[0], 0))
+        resultRow = imageList[0].shape[0]         # 拼接最终结果的横轴长度,先赋值第一个图像的横轴
+        resultCol = imageList[0].shape[1]         # 拼接最终结果的纵轴长度,先赋值第一个图像的纵轴
+        offsetList.insert(0, [0, 0])              # 增加第一张图像相对于最终结果的原点的偏移量
+        for i in range(1, len(offsetList)):
+            self.printAndWrite("  stitching " + str(fileList[i]))
+            # 适用于流形拼接的校正,并更新最终图像大小
+            tempImage = cv2.imread(fileList[i], 0)
+            dxSum = dxSum + offsetList[i][0]
+            dySum = dySum + offsetList[i][1]
+            self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
+            if dxSum <= 0:
+                for j in range(0, i):
+                    offsetList[j][0] = offsetList[j][0] + abs(dxSum)
+                offsetList[i][0] = 0
+                resultRow = resultRow + abs(dxSum)
+            else:
+                resultRow = max(resultRow, dxSum + tempImage.shape[0])
+            if dySum <= 0:
+                for j in range(0, i):
+                    offsetList[j][1] = offsetList[j][1] + abs(dySum)
+                offsetList[i][1] = 0
+                resultCol = resultCol + abs(dySum)
+            else:
+                resultCol = max(resultCol, dySum + tempImage.shape[1])
+            imageList.append(tempImage)
+        stitchResult = np.zeros((resultRow, resultCol), np.int) - 1
+        # 如上算出各个图像相对于原点偏移量，并最终计算出输出图像大小，并构造矩阵，如下开始赋值
+        for i in range(0, len(offsetList)):
+            if i == 0:
+                stitchResult[offsetList[0][0]: offsetList[0][0] + imageList[0].shape[0], offsetList[0][1]: offsetList[0][1] + imageList[0].shape[1]] = imageList[0]
+            else:
+                if self.fuseMethod == "notFuse":
+                    self.printAndWrite("Stitch " + str(i+1) + "th, the roi_ltx is " + str(roi_ltx) + " and the roi_lty is " + str(roi_lty))
+                    stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
+                else:
+                    maxOccupyX = 0
+                    for i in range(stitchResult.shape[0], -1, -1):
+                        if np.unique(stitchResult[i, :]).size > 1:
+                            maxOccupyX = i
+                    maxOccupyY = 0
+                    for i in range(stitchResult.shape[1], -1, -1):
+                        if np.unique(stitchResult[:, i]).size > 1:
+                            maxOccupyY = i
+                    roi_ltx = max()
+                    roi_lty = max()
+                    roi_rbx = min(offsetList[i][0] + imageList[i].shape[0], maxOccupyX)
+                    roi_rby = min(offsetList[i][1] + imageList[i].shape[1], maxOccupyY)
+
+        stitchResult[stitchResult == -1] = 0
+        return stitchResult.astype(np.uint8)
 
     def fuseImage(self, images, dx, dy):
         (imageA, imageB) = images
