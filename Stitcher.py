@@ -40,6 +40,7 @@ class Stitcher(Utility.Method):
     overlapRatio = []
     tempImageFeature = ImageFeature()
     isGPUAvailable = True
+    keypointsRatio = 0.005
 
     def npToListForKeypoints(self, array):
         '''
@@ -279,7 +280,7 @@ class Stitcher(Utility.Method):
         # get the feature points
         if self.tempImageFeature.isBreak == True:
             if self.isGPUAvailable == True:
-                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.searchRatio)
+                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.keypointsRatio, self.searchRatio)
                 kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
                 featuresA = myGpuSurf.getImageADescriptors()
                 kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
@@ -357,7 +358,7 @@ class Stitcher(Utility.Method):
                         roiImageB = cv2.equalizeHist(roiImageB)
                 # get the feature points
                 if self.isGPUAvailable == True:
-                    myGpuSurf.matchFeaturesBySurf(roiImageA, roiImageB, self.searchRatio)
+                    myGpuSurf.matchFeaturesBySurf(roiImageA, roiImageB, self.keypointsRatio, self.searchRatio)
                     kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
                     featuresA = myGpuSurf.getImageADescriptors()
                     kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
