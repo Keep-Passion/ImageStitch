@@ -146,8 +146,8 @@ class Stitcher(Utility.Method):
             else:
                 startNum = startNum + status[1] + 1
 
-            print("status[1] = " + str(status[1]))
-            print("startNum = "+str(startNum))
+            self.printAndWrite("status[1] = " + str(status[1]))
+            self.printAndWrite("startNum = "+str(startNum))
             if startNum == totalNum:
                 break
             if startNum == (totalNum - 1):
@@ -167,7 +167,7 @@ class Stitcher(Utility.Method):
             self.tempImageFeature.isBreak = True
             cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "." + outputfileExtension, result)
             if status == False:
-                print("stitching Failed")
+                self.printAndWrite("stitching Failed")
 
     def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
         for i in range(startNum, fileNum+1):
@@ -303,12 +303,9 @@ class Stitcher(Utility.Method):
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
-        print("kpsA.shape:" + str(len(kpsA)))
-        print("kpsB.shape:" + str(len(kpsB)))
         if featuresA is not None and featuresB is not None:
             if self.isGPUAvailable == True:
                 matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
-                print("matches.shape:" + str(len(matches)))
             else:
                 matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
             # match all the feature points
@@ -366,12 +363,9 @@ class Stitcher(Utility.Method):
                 else:
                     (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
                     (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
-                print("kpsA.shape:" + str(len(kpsA)))
-                print("kpsB.shape:" + str(len(kpsB)))
                 if featuresA is not None and featuresB is not None:
                     if self.isGPUAvailable == True:
                         matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
-                        print("matches.shape:" + str(len(matches)))
                     else:
                         matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
                     # match all the feature points
@@ -408,10 +402,6 @@ class Stitcher(Utility.Method):
         (hB, wB) = imageB.shape[:2]
         dx = offset[0]; dy = offset[1]
         mask = np.zeros(imageB.shape, dtype=np.uint8)
-        # if abs(dy) >= abs(dx):
-        #     direction = "horizontal"
-        # elif abs(dy) < abs(dx):
-        #     direction = "vertical"
 
         if dx >= 0 and dy >= 0:
             # The first image is located at the left top, the second image located at the right bottom
