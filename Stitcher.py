@@ -10,9 +10,10 @@ import ImageUtility as Utility
 import ImageFusion
 import myGpuSurf
 
+
 class ImageFeature():
     # 用来保存串行全局拼接中的第二张图像的特征点和描述子，为后续加速拼接使用
-    isBreak = True      # 判断是否上一次中断
+    isBreak = True  # 判断是否上一次中断
     kps = None
     feature = None
 
@@ -21,14 +22,14 @@ class Stitcher(Utility.Method):
     '''
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
 	'''
-    direction = 1               # 1： 第一张图像在上，第二张图像在下；   2： 第一张图像在左，第二张图像在右；
-                                # 3： 第一张图像在下，第二张图像在上；   4： 第一张图像在右，第二张图像在左；
+    direction = 1  # 1： 第一张图像在上，第二张图像在下；   2： 第一张图像在左，第二张图像在右；
+    # 3： 第一张图像在下，第二张图像在上；   4： 第一张图像在右，第二张图像在左；
     directIncre = 1
-    featureMethod = "surf"      # "sift","surf" or "orb"
-    searchRatio = 0.75          # 0.75 is common value for matches
-    offsetCaculate = "mode"     # "mode" or "ransac"
-    offsetEvaluate = 10         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
-    roiRatio = 0.1              # roi length for stitching in first direction
+    featureMethod = "surf"  # "sift","surf" or "orb"
+    searchRatio = 0.75  # 0.75 is common value for matches
+    offsetCaculate = "mode"  # "mode" or "ransac"
+    offsetEvaluate = 10  # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
+    roiRatio = 0.1  # roi length for stitching in first direction
     fuseMethod = "notFuse"
     isEnhance = False
     isClahe = False
@@ -90,7 +91,8 @@ class Stitcher(Utility.Method):
             else:
                 (status, offset) = caculateOffsetMethod([imageA, imageB])
             if status == False:
-                describtion = "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched"
+                describtion = "  " + str(fileList[fileIndex]) + " and " + str(
+                    fileList[fileIndex + 1]) + " can not be stitched"
                 break
             else:
                 offsetList.append(offset)
@@ -145,7 +147,7 @@ class Stitcher(Utility.Method):
                 startNum = startNum + status[1] + 1
 
             self.printAndWrite("status[1] = " + str(status[1]))
-            self.printAndWrite("startNum = "+str(startNum))
+            self.printAndWrite("startNum = " + str(startNum))
             if startNum == totalNum:
                 break
             if startNum == (totalNum - 1):
@@ -154,8 +156,9 @@ class Stitcher(Utility.Method):
             self.printAndWrite("stitching Break, start from " + str(fileList[startNum]) + " again")
         return result
 
-    def imageSetStitch(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
-        for i in range(startNum, fileNum+1):
+    def imageSetStitch(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum=1,
+                       fileExtension="jpg", outputfileExtension="jpg"):
+        for i in range(startNum, fileNum + 1):
             fileAddress = projectAddress + "\\" + str(i) + "\\"
             fileList = glob.glob(fileAddress + "*." + fileExtension)
             if not os.path.exists(outputAddress):
@@ -167,8 +170,9 @@ class Stitcher(Utility.Method):
             if status == False:
                 self.printAndWrite("stitching Failed")
 
-    def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
-        for i in range(startNum, fileNum+1):
+    def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum=1,
+                                  fileExtension="jpg", outputfileExtension="jpg"):
+        for i in range(startNum, fileNum + 1):
             fileAddress = projectAddress + "\\" + str(i) + "\\"
             fileList = glob.glob(fileAddress + "*." + fileExtension)
             if not os.path.exists(outputAddress):
@@ -181,7 +185,9 @@ class Stitcher(Utility.Method):
                 # cv2.imwrite(outputAddress + "\\" + outputName + "." + outputfileExtension, result[0])
             else:
                 for j in range(0, len(result)):
-                    cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "_" + str(j+1) + "." + outputfileExtension, result[j])
+                    cv2.imwrite(
+                        outputAddress + "\\stitching_result_" + str(i) + "_" + str(j + 1) + "." + outputfileExtension,
+                        result[j])
                     # cv2.imwrite(outputAddress + "\\" + outputName + "_" + str(j + 1) + "." + outputfileExtension,result[j])
 
     def calculateOffsetForPhaseCorrleate(self, dirAddress):
@@ -212,16 +218,18 @@ class Stitcher(Utility.Method):
         (imageA, imageB) = images
         offset = [0, 0]
         status = False
-        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int)+ 1
+        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int) + 1
         iniDirection = self.direction
         localDirection = iniDirection
         for i in range(1, maxI):
-            self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI))
-            while(True):
+            self.printAndWrite("  i=" + str(i) + " and maxI=" + str(maxI))
+            while (True):
                 # get the roi region of images
                 self.printAndWrite("  localDirection=" + str(localDirection))
-                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first", searchRatio = i * self.roiRatio)
-                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second", searchRatio = i * self.roiRatio)
+                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first",
+                                                            searchRatio=i * self.roiRatio)
+                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second",
+                                                            searchRatio=i * self.roiRatio)
 
                 # hann = cv2.createHanningWindow(winSize=(roiImageA.shape[1], roiImageA.shape[0]), type=5)
                 # (offsetTemp, response) = cv2.phaseCorrelate(np.float32(roiImageA), np.float32(roiImageB), window=hann)
@@ -308,9 +316,10 @@ class Stitcher(Utility.Method):
                 matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
             # match all the feature points
             if self.offsetCaculate == "mode":
-                (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
+                (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate=self.offsetEvaluate)
             elif self.offsetCaculate == "ransac":
-                (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
+                (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches,
+                                                                   offsetEvaluate=self.offsetEvaluate)
         if status == False:
             self.tempImageFeature.isBreak = True
             return (status, "  The two images can not match")
@@ -332,20 +341,22 @@ class Stitcher(Utility.Method):
         (imageA, imageB) = images
         offset = [0, 0]
         status = False
-        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int)+ 1
+        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int) + 1
         iniDirection = self.direction
         localDirection = iniDirection
         for i in range(1, maxI):
-            self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI))
-            while(True):
+            self.printAndWrite("  i=" + str(i) + " and maxI=" + str(maxI))
+            while (True):
                 # get the roi region of images
                 self.printAndWrite("  localDirection=" + str(localDirection))
-                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first", searchRatio = i * self.roiRatio)
-                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second", searchRatio = i * self.roiRatio)
+                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first",
+                                                            searchRatio=i * self.roiRatio)
+                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second",
+                                                            searchRatio=i * self.roiRatio)
 
                 if self.isEnhance == True:
                     if self.isClahe == True:
-                        clahe = cv2.createCLAHE(clipLimit=self.clipLimit,tileGridSize=(self.tileSize, self.tileSize))
+                        clahe = cv2.createCLAHE(clipLimit=self.clipLimit, tileGridSize=(self.tileSize, self.tileSize))
                         roiImageA = clahe.apply(roiImageA)
                         roiImageB = clahe.apply(roiImageB)
                     elif self.isClahe == False:
@@ -368,9 +379,10 @@ class Stitcher(Utility.Method):
                         matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
                     # match all the feature points
                     if self.offsetCaculate == "mode":
-                        (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
+                        (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate=self.offsetEvaluate)
                     elif self.offsetCaculate == "ransac":
-                        (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
+                        (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches,
+                                                                           offsetEvaluate=self.offsetEvaluate)
                 if status == True:
                     break
                 else:
@@ -398,41 +410,50 @@ class Stitcher(Utility.Method):
         (imageA, imageB) = images
         (hA, wA) = imageA.shape[:2]
         (hB, wB) = imageB.shape[:2]
-        dx = offset[0]; dy = offset[1]
+        dx = offset[0];
+        dy = offset[1]
         mask = np.zeros(imageB.shape, dtype=np.uint8)
 
         if dx >= 0 and dy >= 0:
             # The first image is located at the left top, the second image located at the right bottom
-            stitchImage = np.zeros((max(hA, dx + hB), max(dy + wB, wA)), dtype=np.int)-1
-            roi_ltx = dx; roi_lty = dy
-            roi_rbx = min(dx + hB, hA); roi_rby = min(dy + wB, wA)
+            stitchImage = np.zeros((max(hA, dx + hB), max(dy + wB, wA)), dtype=np.int) - 1
+            roi_ltx = dx;
+            roi_lty = dy
+            roi_rbx = min(dx + hB, hA);
+            roi_rby = min(dy + wB, wA)
             stitchImage[0: hA, 0:wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[dx: dx+hB, dy: dy+wB] = imageB
+            stitchImage[dx: dx + hB, dy: dy + wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
         elif dx >= 0 and dy < 0:
             # The first image is located at the right top, the second image located at the left bottom
-            stitchImage = np.zeros((max(hA, dx + hB), -dy + wA), dtype=np.int)-1
-            roi_ltx = dx;  roi_lty = -dy
-            roi_rbx = hA;  roi_rby = min(-dy + wA, wB)
+            stitchImage = np.zeros((max(hA, dx + hB), -dy + wA), dtype=np.int) - 1
+            roi_ltx = dx;
+            roi_lty = -dy
+            roi_rbx = hA;
+            roi_rby = min(-dy + wA, wB)
             stitchImage[0: hA, -dy:-dy + wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[dx: dx+hB, 0: wB] = imageB
+            stitchImage[dx: dx + hB, 0: wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
         elif dx < 0 and dy >= 0:
             # The first image is located at the left bottom, the second image located at the right top
-            stitchImage = np.zeros((max(-dx + hA, hB), max(dy + wB, wA)), dtype=np.int)-1
-            roi_ltx = -dx; roi_lty = dy
-            roi_rbx = min(-dx + hA, hB);  roi_rby = min(dy + wB, wA)
+            stitchImage = np.zeros((max(-dx + hA, hB), max(dy + wB, wA)), dtype=np.int) - 1
+            roi_ltx = -dx;
+            roi_lty = dy
+            roi_rbx = min(-dx + hA, hB);
+            roi_rby = min(dy + wB, wA)
             stitchImage[-dx: -dx + hA, 0: wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
             stitchImage[0: hB, dy: dy + wB] = imageB
             roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
         elif dx < 0 and dy < 0:
             # The first image is located at the right bottom, the second image located at the left top
-            stitchImage = np.zeros((-dx + hA, -dy + wA), dtype=np.int)-1
-            roi_ltx = -dx; roi_lty = - dy
-            roi_rbx = hB;  roi_rby = wB
+            stitchImage = np.zeros((-dx + hA, -dy + wA), dtype=np.int) - 1
+            roi_ltx = -dx;
+            roi_lty = - dy
+            roi_rbx = hB;
+            roi_rby = wB
             stitchImage[-dx: -dx + hA, -dy: -dy + wA] = imageA
             roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
             stitchImage[0: hB, 0: wB] = imageB
@@ -493,7 +514,7 @@ class Stitcher(Utility.Method):
         return fuseRegion
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     stitcher = Stitcher()
     imageA = cv2.imread(".\\images\\dendriticCrystal\\1\\1-044.jpg", 0)
     imageB = cv2.imread(".\\images\\dendriticCrystal\\1\\1-045.jpg", 0)

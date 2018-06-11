@@ -3,12 +3,13 @@ import cv2
 import math
 from scipy.stats import mode
 
+
 class Method():
     outputAddress = "result/"
     isEvaluate = True
     evaluateFile = "evaluate.txt"
     isPrintLog = True
-    parallelMode = "None"   # "CPU","GPU"
+    parallelMode = "None"  # "CPU","GPU"
 
     def printAndWrite(self, content):
         if self.isPrintLog:
@@ -71,9 +72,12 @@ class Method():
         if trueCount >= offsetEvaluate:
             totalStatus = True
             adjustH = H.copy()
-            adjustH[0, 2] = 0;adjustH[1, 2] = 0
-            adjustH[2, 0] = 0;adjustH[2, 1] = 0
-            return (totalStatus ,[np.round(np.array(H).astype(np.int)[1,2]) * (-1), np.round(np.array(H).astype(np.int)[0,2]) * (-1)], adjustH)
+            adjustH[0, 2] = 0;
+            adjustH[1, 2] = 0
+            adjustH[2, 0] = 0;
+            adjustH[2, 1] = 0
+            return (totalStatus, [np.round(np.array(H).astype(np.int)[1, 2]) * (-1),
+                                  np.round(np.array(H).astype(np.int)[0, 2]) * (-1)], adjustH)
         else:
             return (totalStatus, [0, 0], 0)
 
@@ -116,19 +120,20 @@ class Method():
         rawMatches = matcher.knnMatch(featuresA, featuresB, 2)
         matches = []
         for m in rawMatches:
-        # 当最近距离跟次近距离的比值小于ratio值时，保留此匹配对
+            # 当最近距离跟次近距离的比值小于ratio值时，保留此匹配对
             if len(m) == 2 and m[0].distance < m[1].distance * ratio:
                 # 存储两个点在featuresA, featuresB中的索引值
                 matches.append((m[0].trainIdx, m[0].queryIdx))
         self.printAndWrite("  The number of matches is " + str(len(matches)))
         return matches
 
-    def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate = 10):
+    def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate=10):
         totalStatus = True
         if len(matches) == 0:
             totalStatus = False
             return (totalStatus, [0, 0])
-        dxList = []; dyList = [];
+        dxList = [];
+        dyList = [];
         for trainIdx, queryIdx in matches:
             ptA = (kpsA[queryIdx][1], kpsA[queryIdx][0])
             ptB = (kpsB[trainIdx][1], kpsB[trainIdx][0])
@@ -152,7 +157,9 @@ class Method():
 
         if num < offsetEvaluate:
             totalStatus = False
-        self.printAndWrite("  In Mode, The number of num is " + str(num) + " and the number of offsetEvaluate is "+str(offsetEvaluate))
+        self.printAndWrite(
+            "  In Mode, The number of num is " + str(num) + " and the number of offsetEvaluate is " + str(
+                offsetEvaluate))
         return (totalStatus, [dx, dy])
 
     def getROIRegionForIncreMethod(self, image, direction=1, order="first", searchRatio=0.1):
@@ -184,19 +191,19 @@ class Method():
                 roiRegion = image[:, col - searchLength:col]
         return roiRegion
 
-    def resizeImg(self, image, resizeTimes, interMethod = cv2.INTER_AREA):
+    def resizeImg(self, image, resizeTimes, interMethod=cv2.INTER_AREA):
         (h, w) = image.shape
         resizeH = int(h * resizeTimes)
         resizeW = int(w * resizeTimes)
         # cv2.INTER_AREA是测试后最好的方法
         return cv2.resize(image, (resizeW, resizeH), interpolation=interMethod)
 
-    def rectifyFinalImg(self, image, regionLength = 10):
+    def rectifyFinalImg(self, image, regionLength=10):
 
         (h, w) = image.shape
-        upperLeft   = np.sum(image[0: regionLength, 0: regionLength])
-        upperRight  = np.sum(image[0: regionLength, w - regionLength: w])
-        bottomLeft  = np.sum(image[h - regionLength: h, 0: regionLength])
+        upperLeft = np.sum(image[0: regionLength, 0: regionLength])
+        upperRight = np.sum(image[0: regionLength, w - regionLength: w])
+        bottomLeft = np.sum(image[h - regionLength: h, 0: regionLength])
         bottomRight = np.sum(image[h - regionLength: h, w - regionLength: w])
         # 预处理
         zeroCol = image[:, 0]
@@ -210,7 +217,7 @@ class Method():
         print("除法:" + str(noneZeroNum / h))
         if (noneZeroNum / h) < 0.5:
             resultImage = image
-        elif upperLeft == 0 and bottomRight == 0 and upperRight != 0 and bottomLeft != 0:      # 左边低，右边高
+        elif upperLeft == 0 and bottomRight == 0 and upperRight != 0 and bottomLeft != 0:  # 左边低，右边高
             print(1)
             center = (w // 2, h // 2)
             print(w)
@@ -220,7 +227,7 @@ class Method():
             M = cv2.getRotationMatrix2D(center, -1 * angle, 1.0)
             print(M)
             resultImage = cv2.warpAffine(image, M, (w, h))
-        elif upperLeft != 0 and bottomRight != 0 and upperRight == 0 and bottomLeft == 0:    # 左边高，右边低
+        elif upperLeft != 0 and bottomRight != 0 and upperRight == 0 and bottomLeft == 0:  # 左边高，右边低
             print(2)
             center = (w // 2, h // 2)
             angle = math.atan(center[1] / center[0]) * 180 / math.pi / 2
