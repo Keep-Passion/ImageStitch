@@ -7,7 +7,7 @@ import time
 
 def stitchWithFeature():
     Stitcher.featureMethod = "surf"     # "sift","surf" or "orb"
-    Stitcher.isGPUAvailable = False
+    Stitcher.isGPUAvailable = True
     Stitcher.keypointsRatio = 0.005
     Stitcher.searchRatio = 0.75         # 0.75 is common value for matches
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"

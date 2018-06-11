@@ -8,7 +8,7 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
-#import myGpuSurf
+import myGpuSurf
 from phasecorrelation import *
 
 class ImageFeature():
@@ -450,8 +450,7 @@ class Stitcher(Utility.Method):
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
 
     def getStitchByOffsetNew(self, fileList, offsetList):
-        dxSum = 0
-        dySum = 0
+        dxSum = dySum = 0
         imageList = []
         imageList.append(cv2.imread(fileList[0], 0))
         resultRow = imageList[0].shape[0]         # 拼接最终结果的横轴长度,先赋值第一个图像的横轴
@@ -464,44 +463,57 @@ class Stitcher(Utility.Method):
             dxSum = dxSum + offsetList[i][0]
             dySum = dySum + offsetList[i][1]
             self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
-            if dxSum <= 0:
-                for j in range(0, i):
-                    offsetList[j][0] = offsetList[j][0] + abs(dxSum)
-                offsetList[i][0] = 0
+            if offsetList[i][0] <= 0:
                 resultRow = resultRow + abs(dxSum)
             else:
                 resultRow = max(resultRow, dxSum + tempImage.shape[0])
-            if dySum <= 0:
+            if offsetList[i][1] <= 0:
                 for j in range(0, i):
                     offsetList[j][1] = offsetList[j][1] + abs(dySum)
-                offsetList[i][1] = 0
+                dySum = offsetList[i][1] = 0
                 resultCol = resultCol + abs(dySum)
             else:
                 resultCol = max(resultCol, dySum + tempImage.shape[1])
             imageList.append(tempImage)
+            for j in range(0, i):
+                offsetList[j][0] = offsetList[j][0] + abs(dxSum)
+            print("i=" + str(i))
+            dxSum = offsetList[i][0] = 0
         stitchResult = np.zeros((resultRow, resultCol), np.int) - 1
+        print(offsetList)
         # 如上算出各个图像相对于原点偏移量，并最终计算出输出图像大小，并构造矩阵，如下开始赋值
         for i in range(0, len(offsetList)):
             if i == 0:
                 stitchResult[offsetList[0][0]: offsetList[0][0] + imageList[0].shape[0], offsetList[0][1]: offsetList[0][1] + imageList[0].shape[1]] = imageList[0]
             else:
                 if self.fuseMethod == "notFuse":
-                    self.printAndWrite("Stitch " + str(i+1) + "th, the roi_ltx is " + str(roi_ltx) + " and the roi_lty is " + str(roi_lty))
+                    self.printAndWrite("Stitch " + str(i+1) + "th, the roi_ltx is " + str(offsetList[i][0]) + " and the roi_lty is " + str(offsetList[i][1]))
                     stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
                 else:
+                    minOccupyX = stitchResult.shape[0]
+                    for j in range(stitchResult.shape[0]):
+                        if np.unique(stitchResult[j, :]).size > 1:
+                            minOccupyX = j
                     maxOccupyX = 0
-                    for i in range(stitchResult.shape[0], -1, -1):
-                        if np.unique(stitchResult[i, :]).size > 1:
-                            maxOccupyX = i
+                    for j in range(stitchResult.shape[0], -1, -1):
+                        if np.unique(stitchResult[j, :]).size > 1:
+                            maxOccupyX = j
+                    minOccupyY = stitchResult.shape[1]
+                    for j in range(stitchResult.shape[1]):
+                        if np.unique(stitchResult[:, j]).size > 1:
+                            minOccupyY = j
                     maxOccupyY = 0
-                    for i in range(stitchResult.shape[1], -1, -1):
-                        if np.unique(stitchResult[:, i]).size > 1:
-                            maxOccupyY = i
-                    roi_ltx = max()
-                    roi_lty = max()
+                    for j in range(stitchResult.shape[1], -1, -1):
+                        if np.unique(stitchResult[:, j]).size > 1:
+                            maxOccupyY = j
+                    roi_ltx = max(offsetList[i][0], minOccupyX)
+                    roi_lty = max(offsetList[i][1], minOccupyY)
                     roi_rbx = min(offsetList[i][0] + imageList[i].shape[0], maxOccupyX)
                     roi_rby = min(offsetList[i][1] + imageList[i].shape[1], maxOccupyY)
-
+                    roiImageRegionA = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
+                    stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
+                    roiImageRegionB = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
+                    stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby] = self.fuseImage([roiImageRegionA, roiImageRegionB])
         stitchResult[stitchResult == -1] = 0
         return stitchResult.astype(np.uint8)
 
