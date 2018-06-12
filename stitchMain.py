@@ -26,7 +26,7 @@ def stitchWithFeature():
     method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
     projectAddress = "images\\dendriticCrystal"
     outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 6, stitcher.calculateOffsetForFeatureSearchIncre,
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearchIncre,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;
