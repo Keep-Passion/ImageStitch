@@ -450,7 +450,13 @@ class Stitcher(Utility.Method):
         stitchImage = stitchImage.astype(np.uint8)
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
 
-    def getStitchByOffsetNew(self, fileList, offsetList):
+    def getStitchByOffsetNew(self, fileList, offsetListOrigin):
+        '''
+        通过偏移量列表和文件列表得到最终的拼接结果
+        :param fileList: 图像列表
+        :param offsetListOrigin: 偏移量列表
+        :return: ndaarry，图像
+        '''
         # 如果你不细心，不要碰这段代码
         # 已优化到根据指针来控制拼接，CPU下最快了
         dxSum = dySum = 0
@@ -458,7 +464,8 @@ class Stitcher(Utility.Method):
         imageList.append(cv2.imread(fileList[0], 0))
         resultRow = imageList[0].shape[0]         # 拼接最终结果的横轴长度,先赋值第一个图像的横轴
         resultCol = imageList[0].shape[1]         # 拼接最终结果的纵轴长度,先赋值第一个图像的纵轴
-        offsetList.insert(0, [0, 0])              # 增加第一张图像相对于最终结果的原点的偏移量
+        offsetListOrigin.insert(0, [0, 0])              # 增加第一张图像相对于最终结果的原点的偏移量
+        offsetList = offsetListOrigin.copy()
         for i in range(1, len(offsetList)):
             self.printAndWrite("  stitching " + str(fileList[i]))
             # 适用于流形拼接的校正,并更新最终图像大小
@@ -491,9 +498,11 @@ class Stitcher(Utility.Method):
                 stitchResult[offsetList[0][0]: offsetList[0][0] + imageList[0].shape[0], offsetList[0][1]: offsetList[0][1] + imageList[0].shape[1]] = imageList[0]
             else:
                 if self.fuseMethod == "notFuse":
+                    # 适用于无图像融合，直接覆盖
                     # self.printAndWrite("Stitch " + str(i+1) + "th, the roi_ltx is " + str(offsetList[i][0]) + " and the roi_lty is " + str(offsetList[i][1]))
                     stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
                 else:
+                    # 适用于图像融合算法，切出roiA 和 roiB 供图像融合
                     minOccupyX = stitchResult.shape[0]
                     for j in range(stitchResult.shape[0]):
                         if np.unique(stitchResult[j, :]).size > 1:
@@ -517,7 +526,7 @@ class Stitcher(Utility.Method):
                     roiImageRegionA = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
                     stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
                     roiImageRegionB = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
-                    stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby] = self.fuseImage([roiImageRegionA, roiImageRegionB])
+                    stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby] = self.fuseImage([roiImageRegionA, roiImageRegionB], offsetListOrigin[i][0], offsetListOrigin[i][1])
         stitchResult[stitchResult == -1] = 0
         return stitchResult.astype(np.uint8)
 

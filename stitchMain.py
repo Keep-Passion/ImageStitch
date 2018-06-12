@@ -13,7 +13,7 @@ def stitchWithFeature():
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-    Stitcher.fuseMethod = "notFuse"
+    Stitcher.fuseMethod = "fadeInAndFadeOut"
     stitcher = Stitcher()
     startTime = time.time()
 
