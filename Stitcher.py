@@ -100,6 +100,7 @@ class Stitcher(Utility.Method):
         endTime = time.time()
 
         self.printAndWrite("The time of registering is " + str(endTime - startTime) + "s")
+
         self.printAndWrite("  The offsetList is " + str(offsetList))
 
         # stitching and fusing
@@ -450,6 +451,8 @@ class Stitcher(Utility.Method):
         return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
 
     def getStitchByOffsetNew(self, fileList, offsetList):
+        # 如果你不细心，不要碰这段代码
+        # 已优化到根据指针来控制拼接，CPU下最快了
         dxSum = dySum = 0
         imageList = []
         imageList.append(cv2.imread(fileList[0], 0))
@@ -463,31 +466,32 @@ class Stitcher(Utility.Method):
             dxSum = dxSum + offsetList[i][0]
             dySum = dySum + offsetList[i][1]
             self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
-            if offsetList[i][0] <= 0:
+            if dxSum <= 0:
+                for j in range(0, i):
+                    offsetList[j][0] = offsetList[j][0] + abs(dxSum)
                 resultRow = resultRow + abs(dxSum)
+                dxSum = offsetList[i][0] = 0
             else:
+                offsetList[i][0] = dxSum
                 resultRow = max(resultRow, dxSum + tempImage.shape[0])
-            if offsetList[i][1] <= 0:
+            if dySum <= 0:
                 for j in range(0, i):
                     offsetList[j][1] = offsetList[j][1] + abs(dySum)
-                dySum = offsetList[i][1] = 0
                 resultCol = resultCol + abs(dySum)
+                dySum = offsetList[i][1] = 0
             else:
+                offsetList[i][1] = dySum
                 resultCol = max(resultCol, dySum + tempImage.shape[1])
             imageList.append(tempImage)
-            for j in range(0, i):
-                offsetList[j][0] = offsetList[j][0] + abs(dxSum)
-            print("i=" + str(i))
-            dxSum = offsetList[i][0] = 0
         stitchResult = np.zeros((resultRow, resultCol), np.int) - 1
-        print(offsetList)
+        self.printAndWrite("  The rectified offsetList is " + str(offsetList))
         # 如上算出各个图像相对于原点偏移量，并最终计算出输出图像大小，并构造矩阵，如下开始赋值
         for i in range(0, len(offsetList)):
             if i == 0:
                 stitchResult[offsetList[0][0]: offsetList[0][0] + imageList[0].shape[0], offsetList[0][1]: offsetList[0][1] + imageList[0].shape[1]] = imageList[0]
             else:
                 if self.fuseMethod == "notFuse":
-                    self.printAndWrite("Stitch " + str(i+1) + "th, the roi_ltx is " + str(offsetList[i][0]) + " and the roi_lty is " + str(offsetList[i][1]))
+                    # self.printAndWrite("Stitch " + str(i+1) + "th, the roi_ltx is " + str(offsetList[i][0]) + " and the roi_lty is " + str(offsetList[i][1]))
                     stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
                 else:
                     minOccupyX = stitchResult.shape[0]
