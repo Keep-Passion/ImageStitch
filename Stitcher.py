@@ -83,25 +83,25 @@ class Stitcher(Utility.Method):
         startTime = time.time()
         status = True
         endfileIndex = 0
-        for fileIndex in range(0, fileNum - 1):
-            self.printAndWrite("stitching " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex + 1]))
-            imageA = cv2.imread(fileList[fileIndex], 0)
-            imageB = cv2.imread(fileList[fileIndex + 1], 0)
-            if caculateOffsetMethod == self.calculateOffsetForPhaseCorrleate:
-                (status, offset) = self.calculateOffsetForPhaseCorrleate([fileList[fileIndex], fileList[fileIndex + 1]])
-            else:
-                (status, offset) = caculateOffsetMethod([imageA, imageB])
-            if status == False:
-                describtion = "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched"
-                break
-            else:
-                offsetList.append(offset)
-                endfileIndex = fileIndex + 1
-        endTime = time.time()
-
-        self.printAndWrite("The time of registering is " + str(endTime - startTime) + "s")
-
-        self.printAndWrite("  The offsetList is " + str(offsetList))
+        # for fileIndex in range(0, fileNum - 1):
+        #     self.printAndWrite("stitching " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex + 1]))
+        #     imageA = cv2.imread(fileList[fileIndex], 0)
+        #     imageB = cv2.imread(fileList[fileIndex + 1], 0)
+        #     if caculateOffsetMethod == self.calculateOffsetForPhaseCorrleate:
+        #         (status, offset) = self.calculateOffsetForPhaseCorrleate([fileList[fileIndex], fileList[fileIndex + 1]])
+        #     else:
+        #         (status, offset) = caculateOffsetMethod([imageA, imageB])
+        #     if status == False:
+        #         describtion = "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched"
+        #         break
+        #     else:
+        #         offsetList.append(offset)
+        #         endfileIndex = fileIndex + 1
+        # endTime = time.time()
+        #
+        # self.printAndWrite("The time of registering is " + str(endTime - startTime) + "s")
+        #
+        # self.printAndWrite("  The offsetList is " + str(offsetList))
 
         # stitching and fusing
         self.printAndWrite("start stitching")
@@ -127,6 +127,7 @@ class Stitcher(Utility.Method):
         #         dxSum = 0
         #     if dySum < 0:
         #         dySum = 0
+        offsetList = [[1784, 2], [1805, 2], [1809, 2], [1775, 2], [1760, 2], [1846, 2], [1809, 1], [1812, 2], [1787, 2], [1818, 3], [1786, 2], [1802, 2], [1722, 1], [1211, 1], [-9, 2412], [-1734, -1], [-1808, -1], [-1788, -3], [-1754, -1], [-1727, -2], [-1790, -3], [-1785, -2], [-1778, -1], [-1807, -2], [-1767, -2], [-1822, -3], [-1677, -2], [-1778, -2], [-1440, -1], [-2, 2410], [1758, 2], [1792, 2], [1794, 2], [1840, 3], [1782, 2], [1802, 3], [1782, 1], [1763, 3], [1738, 2], [1837, 3], [1781, 2], [1788, 18], [1712, 0], [1271, -11], [-3, 2478], [-1787, -1], [-1812, -2], [-1822, -2], [-1762, -1], [-1725, -2], [-1884, -2], [-1754, -2], [-1747, -1], [-1666, -1], [-1874, -3], [-1695, -2], [-1672, -1], [-1816, -2], [-1411, -1], [-4, 2431], [1874, 3], [1706, -3], [1782, 2], [1794, 3], [1732, 3], [1838, 3], [1721, 1], [1783, 3], [1805, 2], [1725, 3], [1828, 1], [1774, 3], [1776, 1], [1201, 1], [-16, 2405], [-1821, 0], [-1843, -2], [-1758, -2], [-1742, -3], [-1814, -2], [-1817, -2], [-1848, -2], [-1768, -2], [-1749, -2], [-1765, -2], [-1659, -2], [-1832, -2], [-1791, -2], [-1197, -1]]
         stitchImage = self.getStitchByOffsetNew(fileList, offsetList)
         endTime = time.time()
         self.printAndWrite("The time of fusing is " + str(endTime - startTime) + "s")
@@ -464,7 +465,9 @@ class Stitcher(Utility.Method):
         imageList.append(cv2.imread(fileList[0], 0))
         resultRow = imageList[0].shape[0]         # 拼接最终结果的横轴长度,先赋值第一个图像的横轴
         resultCol = imageList[0].shape[1]         # 拼接最终结果的纵轴长度,先赋值第一个图像的纵轴
-        offsetListOrigin.insert(0, [0, 0])              # 增加第一张图像相对于最终结果的原点的偏移量
+        offsetListOrigin.insert(0, [0, 0])        # 增加第一张图像相对于最终结果的原点的偏移量
+        rangeX = offsetListOrigin.copy()          # 主要用于记录X方向最大最小边界
+        rangeY = offsetListOrigin.copy()          # 主要用于记录Y方向最大最小边界
         offsetList = offsetListOrigin.copy()
         for i in range(1, len(offsetList)):
             self.printAndWrite("  stitching " + str(fileList[i]))
@@ -507,22 +510,34 @@ class Stitcher(Utility.Method):
                     for j in range(stitchResult.shape[0]):
                         if np.unique(stitchResult[j, :]).size > 1:
                             minOccupyX = j
+                            break
                     maxOccupyX = 0
-                    for j in range(stitchResult.shape[0], -1, -1):
+                    for j in range(stitchResult.shape[0]-1, -1, -1):
                         if np.unique(stitchResult[j, :]).size > 1:
-                            maxOccupyX = j
+                            maxOccupyX = j + 1
+                            break
                     minOccupyY = stitchResult.shape[1]
                     for j in range(stitchResult.shape[1]):
                         if np.unique(stitchResult[:, j]).size > 1:
                             minOccupyY = j
+                            break
                     maxOccupyY = 0
-                    for j in range(stitchResult.shape[1], -1, -1):
+                    for j in range(stitchResult.shape[1]-1, -1, -1):
                         if np.unique(stitchResult[:, j]).size > 1:
-                            maxOccupyY = j
+                            maxOccupyY = j + 1
+                            break
+                    self.printAndWrite("Stitch " + str(i + 1) + "th, the offsetList[i][0] is " + str(
+                        offsetList[i][0]) + " and the offsetList[i][1] is " + str(offsetList[i][1]))
+                    self.printAndWrite("Stitch " + str(i + 1) + "th, the minOccupyX is " + str(
+                        minOccupyX) + " and the maxOccupyX is " + str(maxOccupyX) + " and the minOccupyY is " + str(
+                        minOccupyY) + " and the maxOccupyY is " + str(maxOccupyY))
                     roi_ltx = max(offsetList[i][0], minOccupyX)
                     roi_lty = max(offsetList[i][1], minOccupyY)
                     roi_rbx = min(offsetList[i][0] + imageList[i].shape[0], maxOccupyX)
                     roi_rby = min(offsetList[i][1] + imageList[i].shape[1], maxOccupyY)
+                    self.printAndWrite("Stitch " + str(i + 1) + "th, the roi_ltx is " + str(
+                        roi_ltx) + " and the roi_lty is " + str(roi_lty) + " and the roi_rbx is " + str(
+                        roi_rbx) + " and the roi_rby is " + str(roi_rby))
                     roiImageRegionA = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
                     stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
                     roiImageRegionB = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
@@ -532,9 +547,6 @@ class Stitcher(Utility.Method):
 
     def fuseImage(self, images, dx, dy):
         (imageA, imageB) = images
-        # cv2.imshow("A", imageA)
-        # cv2.imshow("B", imageB)
-        # cv2.waitKey(0)
         fuseRegion = np.zeros(imageA.shape, np.uint8)
         # imageA[imageA == 0] = imageB[imageA == 0]
         # imageB[imageB == 0] = imageA[imageB == 0]
