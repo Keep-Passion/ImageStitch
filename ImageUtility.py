@@ -1,13 +1,24 @@
 import numpy as np
 import cv2
 import math
+import myGpuSurf
 from scipy.stats import mode
 
 class Method():
+    # 关于打印的设置
     outputAddress = "result/"
     isEvaluate = True
     evaluateFile = "evaluate.txt"
     isPrintLog = True
+
+    # 关于GPU加速的设置
+    isGPUAvailable = True
+
+    # 关于GPU-SURF 的 设置
+    gpuKeypointsRatio = 0.005
+    gpuHessianThreshold = 100.0
+    gpuNOctaves = 4
+    gpuNOctaveLayers = 3
 
     def printAndWrite(self, content):
         if self.isPrintLog:
@@ -17,6 +28,30 @@ class Method():
             f.write(content)
             f.write("\n")
             f.close()
+
+    def npToListForKeypoints(self, array):
+        '''
+        Convert array to List, used for keypoints from GPUDLL to python List
+        :param array: array from GPUDLL
+        :return:
+        '''
+        kps = []
+        row, col = array.shape
+        for i in range(row):
+            kps.append([array[i, 0], array[i, 1]])
+        return kps
+
+    def npToListForMatches(self, array):
+        '''
+        Convert array to List, used for DMatches from GPUDLL to python List
+        :param array: array from GPUDLL
+        :return:
+        '''
+        descritpors = []
+        row, col = array.shape
+        for i in range(row):
+            descritpors.append((array[i, 0], array[i, 1]))
+        return descritpors
 
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域

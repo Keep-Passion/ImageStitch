@@ -3,6 +3,7 @@ import cv2
 import math
 import ImageUtility as Utility
 
+
 class ImageFusion(Utility.Method):
 
     def fuseByAverage(self, images):

@@ -8,7 +8,8 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
-import myGpuSurf
+
+
 from phasecorrelation import *
 
 class ImageFeature():
@@ -39,35 +40,7 @@ class Stitcher(Utility.Method):
     phase = phaseCorrelation()
     overlapRatio = []
     tempImageFeature = ImageFeature()
-    isGPUAvailable = True
-    gpuKeypointsRatio = 0.005
-    gpuHessianThreshold = 100.0
-    gpuNOctaves = 4
-    gpuNOctaveLayers = 3
 
-    def npToListForKeypoints(self, array):
-        '''
-        Convert array to List, used for keypoints from GPUDLL to python List
-        :param array: array from GPUDLL
-        :return:
-        '''
-        kps = []
-        row, col = array.shape
-        for i in range(row):
-            kps.append([array[i, 0], array[i, 1]])
-        return kps
-
-    def npToListForMatches(self, array):
-        '''
-        Convert array to List, used for DMatches from GPUDLL to python List
-        :param array: array from GPUDLL
-        :return:
-        '''
-        descritpors = []
-        row, col = array.shape
-        for i in range(row):
-            descritpors.append((array[i, 0], array[i, 1]))
-        return descritpors
 
     def directionIncrease(self, direction):
         direction += self.directIncre
