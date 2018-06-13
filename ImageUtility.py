@@ -5,21 +5,38 @@ import myGpuSurf
 from scipy.stats import mode
 
 class Method():
-    # 关于打印的设置
+    # 关于打印信息的设置
     outputAddress = "result/"
     isEvaluate = True
     evaluateFile = "evaluate.txt"
     isPrintLog = True
 
-    # 关于GPU加速的设置
+    # 关于特征搜索的设置
+    featureMethod = "surf"      # "sift","surf" or "orb"
+    roiRatio = 0.1              # roi length for stitching in first direction
+    searchRatio = 0.95          # 0.75 is common value for matches
+
+    # 关于 GPU 加速的设置
     isGPUAvailable = True
 
-    # 关于GPU-SURF 的 设置
+    # 关于 GPU-SURF 的设置
     gpuKeypointsRatio = 0.005
     gpuHessianThreshold = 100.0
     gpuNOctaves = 4
     gpuNOctaveLayers = 3
 
+    # 关于 GPU-ORB 的设置
+    # gpuKeypointsRatio = 0.005
+    # gpuHessianThreshold = 100.0
+    # gpuNOctaves = 4
+    # gpuNOctaveLayers = 3
+
+    # 关于特征配准的设置
+    offsetCaculate = "mode"     # "mode" or "ransac"
+    offsetEvaluate = 10         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
+
+
+    # 向屏幕和文件打印输出内容
     def printAndWrite(self, content):
         if self.isPrintLog:
             print(content)
@@ -29,29 +46,34 @@ class Method():
             f.write("\n")
             f.close()
 
-    def npToListForKeypoints(self, array):
-        '''
-        Convert array to List, used for keypoints from GPUDLL to python List
-        :param array: array from GPUDLL
-        :return:
-        '''
-        kps = []
-        row, col = array.shape
-        for i in range(row):
-            kps.append([array[i, 0], array[i, 1]])
-        return kps
-
-    def npToListForMatches(self, array):
-        '''
-        Convert array to List, used for DMatches from GPUDLL to python List
-        :param array: array from GPUDLL
-        :return:
-        '''
-        descritpors = []
-        row, col = array.shape
-        for i in range(row):
-            descritpors.append((array[i, 0], array[i, 1]))
-        return descritpors
+    def getROIRegionForIncreMethod(self, image, direction=1, order="first", searchRatio=0.1):
+        row, col = image.shape[:2]
+        roiRegion = np.zeros(image.shape, np.uint8)
+        if direction == 1:
+            searchLength = np.floor(row * searchRatio).astype(int)
+            if order == "first":
+                roiRegion = image[row - searchLength:row, :]
+            elif order == "second":
+                roiRegion = image[0: searchLength, :]
+        elif direction == 2:
+            searchLength = np.floor(col * searchRatio).astype(int)
+            if order == "first":
+                roiRegion = image[:, col - searchLength:col]
+            elif order == "second":
+                roiRegion = image[:, 0: searchLength]
+        elif direction == 3:
+            searchLength = np.floor(row * searchRatio).astype(int)
+            if order == "first":
+                roiRegion = image[0: searchLength, :]
+            elif order == "second":
+                roiRegion = image[row - searchLength:row, :]
+        elif direction == 4:
+            searchLength = np.floor(col * searchRatio).astype(int)
+            if order == "first":
+                roiRegion = image[:, 0: searchLength]
+            elif order == "second":
+                roiRegion = image[:, col - searchLength:col]
+        return roiRegion
 
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
         '''对原始图像裁剪感兴趣区域
@@ -87,76 +109,6 @@ class Method():
                 elif searchLengthForLarge > 0:
                     roiRegion = image[0: searchLength, 0:searchLengthForLarge]
 
-    def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
-        totalStatus = False
-        ptsA = np.float32([kpsA[i] for (_, i) in matches])
-        ptsB = np.float32([kpsB[i] for (i, _) in matches])
-        if len(matches) == 0:
-            return (totalStatus, [0, 0], 0)
-        # 计算视角变换矩阵
-        # H1 = cv2.getAffineTransform(ptsA, ptsB)
-        # print("H1")
-        # print(H1)
-        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
-        trueCount = 0
-        for i in range(0, len(status)):
-            if status[i] == True:
-                trueCount = trueCount + 1
-        if trueCount >= offsetEvaluate:
-            totalStatus = True
-            adjustH = H.copy()
-            adjustH[0, 2] = 0;adjustH[1, 2] = 0
-            adjustH[2, 0] = 0;adjustH[2, 1] = 0
-            return (totalStatus ,[np.round(np.array(H).astype(np.int)[1,2]) * (-1), np.round(np.array(H).astype(np.int)[0,2]) * (-1)], adjustH)
-        else:
-            return (totalStatus, [0, 0], 0)
-
-    def detectAndDescribe(self, image, featureMethod):
-        '''
-    	计算图像的特征点集合，并返回该点集＆描述特征
-    	:param image:需要分析的图像
-    	:return:返回特征点集，及对应的描述特征
-    	'''
-        # 建立SIFT生成器
-        if featureMethod == "sift":
-            descriptor = cv2.xfeatures2d.SIFT_create()
-        elif featureMethod == "surf":
-            descriptor = cv2.xfeatures2d.SURF_create()
-        elif featureMethod == "orb":
-            descriptor = cv2.ORB_create(5000000)
-
-        # 检测SIFT特征点，并计算描述子
-        (kps, features) = descriptor.detectAndCompute(image, None)
-
-        # 将结果转换成NumPy数组
-        kps = np.float32([kp.pt for kp in kps])
-
-        # 返回特征点集，及对应的描述特征
-        return (kps, features)
-
-    def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
-        '''
-        匹配特征点
-        :param self:
-        :param featuresA: 第一张图像的特征点描述符
-        :param featuresB: 第二张图像的特征点描述符
-        :param ratio: 最近邻和次近邻的比例
-        :return:返回匹配的对数
-        '''
-        # 建立暴力匹配器
-        matcher = cv2.DescriptorMatcher_create("BruteForce")
-
-        # 使用KNN检测来自A、B图的SIFT特征匹配对，K=2，返回一个列表
-        rawMatches = matcher.knnMatch(featuresA, featuresB, 2)
-        matches = []
-        for m in rawMatches:
-        # 当最近距离跟次近距离的比值小于ratio值时，保留此匹配对
-            if len(m) == 2 and m[0].distance < m[1].distance * ratio:
-                # 存储两个点在featuresA, featuresB中的索引值
-                matches.append((m[0].trainIdx, m[0].queryIdx))
-        self.printAndWrite("  The number of matches is " + str(len(matches)))
-        return matches
-
     def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate = 10):
         totalStatus = True
         if len(matches) == 0:
@@ -190,34 +142,106 @@ class Method():
         self.printAndWrite("  In Mode, The number of num is " + str(num) + " and the number of offsetEvaluate is "+str(offsetEvaluate))
         return (totalStatus, [dx, dy])
 
-    def getROIRegionForIncreMethod(self, image, direction=1, order="first", searchRatio=0.1):
-        row, col = image.shape[:2]
-        roiRegion = np.zeros(image.shape, np.uint8)
-        if direction == 1:
-            searchLength = np.floor(row * searchRatio).astype(int)
-            if order == "first":
-                roiRegion = image[row - searchLength:row, :]
-            elif order == "second":
-                roiRegion = image[0: searchLength, :]
-        elif direction == 2:
-            searchLength = np.floor(col * searchRatio).astype(int)
-            if order == "first":
-                roiRegion = image[:, col - searchLength:col]
-            elif order == "second":
-                roiRegion = image[:, 0: searchLength]
-        elif direction == 3:
-            searchLength = np.floor(row * searchRatio).astype(int)
-            if order == "first":
-                roiRegion = image[0: searchLength, :]
-            elif order == "second":
-                roiRegion = image[row - searchLength:row, :]
-        elif direction == 4:
-            searchLength = np.floor(col * searchRatio).astype(int)
-            if order == "first":
-                roiRegion = image[:, 0: searchLength]
-            elif order == "second":
-                roiRegion = image[:, col - searchLength:col]
-        return roiRegion
+    def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
+        totalStatus = False
+        ptsA = np.float32([kpsA[i] for (_, i) in matches])
+        ptsB = np.float32([kpsB[i] for (i, _) in matches])
+        if len(matches) == 0:
+            return (totalStatus, [0, 0], 0)
+        # 计算视角变换矩阵
+        # H1 = cv2.getAffineTransform(ptsA, ptsB)
+        # print("H1")
+        # print(H1)
+        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
+        trueCount = 0
+        for i in range(0, len(status)):
+            if status[i] == True:
+                trueCount = trueCount + 1
+        if trueCount >= offsetEvaluate:
+            totalStatus = True
+            adjustH = H.copy()
+            adjustH[0, 2] = 0;adjustH[1, 2] = 0
+            adjustH[2, 0] = 0;adjustH[2, 1] = 0
+            return (totalStatus ,[np.round(np.array(H).astype(np.int)[1,2]) * (-1), np.round(np.array(H).astype(np.int)[0,2]) * (-1)], adjustH)
+        else:
+            return (totalStatus, [0, 0], 0)
+
+    def npToListForKeypoints(self, array):
+        '''
+        Convert array to List, used for keypoints from GPUDLL to python List
+        :param array: array from GPUDLL
+        :return:
+        '''
+        kps = []
+        row, col = array.shape
+        for i in range(row):
+            kps.append([array[i, 0], array[i, 1]])
+        return kps
+
+    def npToListForMatches(self, array):
+        '''
+        Convert array to List, used for DMatches from GPUDLL to python List
+        :param array: array from GPUDLL
+        :return:
+        '''
+        descritpors = []
+        row, col = array.shape
+        for i in range(row):
+            descritpors.append((array[i, 0], array[i, 1]))
+        return descritpors
+
+    def detectAndDescribe(self, image, featureMethod):
+        '''
+    	计算图像的特征点集合，并返回该点集＆描述特征
+    	:param image:需要分析的图像
+    	:return:返回特征点集，及对应的描述特征
+    	'''
+        if self.isGPUAvailable == False: # CPU mode
+            if featureMethod == "sift":
+                descriptor = cv2.xfeatures2d.SIFT_create()
+            elif featureMethod == "surf":
+                descriptor = cv2.xfeatures2d.SURF_create()
+            elif featureMethod == "orb":
+                descriptor = cv2.ORB_create(5000000)
+            # 检测SIFT特征点，并计算描述子
+            (kps, features) = descriptor.detectAndCompute(image, None)
+            # 将结果转换成NumPy数组
+            kps = np.float32([kp.pt for kp in kps])
+        else:                           # GPU mode
+            if featureMethod == "sift":
+                # 目前GPU-SIFT尚未开发，先采用CPU版本的替代
+                descriptor = cv2.xfeatures2d.SIFT_create()
+                (kps, features) = descriptor.detectAndCompute(image, None)
+                kps = np.float32([kp.pt for kp in kps])
+            elif featureMethod == "surf":
+                descriptor = cv2.xfeatures2d.SURF_create()
+            elif featureMethod == "orb":
+                descriptor = cv2.ORB_create(5000000)
+        # 返回特征点集，及对应的描述特征
+        return (kps, features)
+
+    def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
+        '''
+        匹配特征点
+        :param self:
+        :param featuresA: 第一张图像的特征点描述符
+        :param featuresB: 第二张图像的特征点描述符
+        :param ratio: 最近邻和次近邻的比例
+        :return:返回匹配的对数
+        '''
+        # 建立暴力匹配器
+        matcher = cv2.DescriptorMatcher_create("BruteForce")
+
+        # 使用KNN检测来自A、B图的SIFT特征匹配对，K=2，返回一个列表
+        rawMatches = matcher.knnMatch(featuresA, featuresB, 2)
+        matches = []
+        for m in rawMatches:
+        # 当最近距离跟次近距离的比值小于ratio值时，保留此匹配对
+            if len(m) == 2 and m[0].distance < m[1].distance * ratio:
+                # 存储两个点在featuresA, featuresB中的索引值
+                matches.append((m[0].trainIdx, m[0].queryIdx))
+        self.printAndWrite("  The number of matches is " + str(len(matches)))
+        return matches
 
     def resizeImg(self, image, resizeTimes, interMethod = cv2.INTER_AREA):
         (h, w) = image.shape

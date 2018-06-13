@@ -26,11 +26,6 @@ class Stitcher(Utility.Method):
     direction = 1               # 1： 第一张图像在上，第二张图像在下；   2： 第一张图像在左，第二张图像在右；
                                 # 3： 第一张图像在下，第二张图像在上；   4： 第一张图像在右，第二张图像在左；
     directIncre = 1
-    featureMethod = "surf"      # "sift","surf" or "orb"
-    searchRatio = 0.95          # 0.75 is common value for matches
-    offsetCaculate = "mode"     # "mode" or "ransac"
-    offsetEvaluate = 10         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
-    roiRatio = 0.1              # roi length for stitching in first direction
     fuseMethod = "notFuse"
     isEnhance = False
     isClahe = False
@@ -38,9 +33,7 @@ class Stitcher(Utility.Method):
     tileSize = 5
     phaseResponseThreshold = 0.15
     phase = phaseCorrelation()
-    overlapRatio = []
     tempImageFeature = ImageFeature()
-
 
     def directionIncrease(self, direction):
         direction += self.directIncre
