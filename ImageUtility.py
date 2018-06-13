@@ -8,7 +8,6 @@ class Method():
     isEvaluate = True
     evaluateFile = "evaluate.txt"
     isPrintLog = True
-    parallelMode = "None"   # "CPU","GPU"
 
     def printAndWrite(self, content):
         if self.isPrintLog:
