@@ -228,35 +228,20 @@ class Stitcher(Utility.Method):
                 imageB = cv2.equalizeHist(imageB)
         # get the feature points
         if self.tempImageFeature.isBreak == True:
-            if self.isGPUAvailable == True:
-                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.gpuHessianThreshold, self.gpuNOctaves, self.gpuNOctaveLayers, self.gpuKeypointsRatio, self.searchRatio)
-                kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
-                featuresA = myGpuSurf.getImageADescriptors()
-                kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
-                featuresB = myGpuSurf.getImageBDescriptors()
-            else:
-                (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
-                (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
+            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
         else:
             kpsA = self.tempImageFeature.kps
             featuresA = self.tempImageFeature.feature
-            if self.isGPUAvailable == True:
-                myGpuSurf.matchFeaturesBySurf(imageA, imageB,self.gpuHessianThreshold, self.gpuNOctaves, self.gpuNOctaveLayers, self.gpuKeypointsRatio, self.searchRatio)
-                kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
-                featuresB = myGpuSurf.getImageBDescriptors()
-            else:
-                (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
         if featuresA is not None and featuresB is not None:
-            if self.isGPUAvailable == True:
-                matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
-            else:
-                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+            matches = self.matchDescriptors(featuresA, featuresB)
             # match all the feature points
             if self.offsetCaculate == "mode":
                 (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
@@ -303,20 +288,10 @@ class Stitcher(Utility.Method):
                         roiImageA = cv2.equalizeHist(roiImageA)
                         roiImageB = cv2.equalizeHist(roiImageB)
                 # get the feature points
-                if self.isGPUAvailable == True:
-                    myGpuSurf.matchFeaturesBySurf(roiImageA, roiImageB, self.gpuHessianThreshold, self.gpuNOctaves, self.gpuNOctaveLayers, self.gpuKeypointsRatio, self.searchRatio)
-                    kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
-                    featuresA = myGpuSurf.getImageADescriptors()
-                    kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
-                    featuresB = myGpuSurf.getImageBDescriptors()
-                else:
-                    (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
-                    (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
+                kpsA, featuresA = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
+                kpsB, featuresB = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
                 if featuresA is not None and featuresB is not None:
-                    if self.isGPUAvailable == True:
-                        matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
-                    else:
-                        matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+                    matches = self.matchDescriptors(featuresA, featuresB)
                     # match all the feature points
                     if self.offsetCaculate == "mode":
                         (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)

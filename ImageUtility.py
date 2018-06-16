@@ -1,39 +1,47 @@
 import numpy as np
 import cv2
 import math
-import myGpuSurf
+import myGpuFeatures
 from scipy.stats import mode
 
 class Method():
     # 关于打印信息的设置
     outputAddress = "result/"
-    isEvaluate = True
+    isEvaluate = False
     evaluateFile = "evaluate.txt"
     isPrintLog = True
 
     # 关于特征搜索的设置
     featureMethod = "surf"      # "sift","surf" or "orb"
     roiRatio = 0.1              # roi length for stitching in first direction
-    searchRatio = 0.95          # 0.75 is common value for matches
+    searchRatio = 0.75          # 0.75 is common value for matches
 
     # 关于 GPU 加速的设置
     isGPUAvailable = True
 
     # 关于 GPU-SURF 的设置
-    gpuKeypointsRatio = 0.005
-    gpuHessianThreshold = 100.0
-    gpuNOctaves = 4
-    gpuNOctaveLayers = 3
+    surfHessianThreshold = 100.0
+    surfNOctaves = 4
+    surfNOctaveLayers = 3
+    surfIsExtended = False
+    surfKeypointsRatio = 1
+    surfIsUpright = False
 
     # 关于 GPU-ORB 的设置
-    # gpuKeypointsRatio = 0.005
-    # gpuHessianThreshold = 100.0
-    # gpuNOctaves = 4
-    # gpuNOctaveLayers = 3
+    orbNfeatures = 5000
+    orbScaleFactor = 1.2
+    orbNlevels = 8
+    orbEdgeThreshold = 31
+    orbFirstLevel = 0
+    orbWTA_K = 2
+    orbPatchSize = 31
+    orbFastThreshold = 20
+    orbBlurForDescriptor = False
+    orbMaxDistance = 10
 
     # 关于特征配准的设置
     offsetCaculate = "mode"     # "mode" or "ransac"
-    offsetEvaluate = 10         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
+    offsetEvaluate = 3         # 40 menas nums of matches for mode, 3.0 menas  of matches for ransac
 
 
     # 向屏幕和文件打印输出内容
@@ -139,7 +147,7 @@ class Method():
 
         if num < offsetEvaluate:
             totalStatus = False
-        self.printAndWrite("  In Mode, The number of num is " + str(num) + " and the number of offsetEvaluate is "+str(offsetEvaluate))
+        # self.printAndWrite("  In Mode, The number of num is " + str(num) + " and the number of offsetEvaluate is "+str(offsetEvaluate))
         return (totalStatus, [dx, dy])
 
     def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
@@ -190,6 +198,13 @@ class Method():
             descritpors.append((array[i, 0], array[i, 1]))
         return descritpors
 
+    def npToKpsAndDescriptors(self, array):
+        kps = []
+        descriptors = array[:, :, 1]
+        for i in range(array.shape[0]):
+            kps.append([array[i, 0, 0], array[i, 1, 0]])
+        return (kps, descriptors)
+
     def detectAndDescribe(self, image, featureMethod):
         '''
     	计算图像的特征点集合，并返回该点集＆描述特征
@@ -202,25 +217,25 @@ class Method():
             elif featureMethod == "surf":
                 descriptor = cv2.xfeatures2d.SURF_create()
             elif featureMethod == "orb":
-                descriptor = cv2.ORB_create(5000000)
+                descriptor = cv2.ORB_create(self.orbNfeatures, self.orbScaleFactor, self.orbNlevels, self.orbEdgeThreshold, self.orbFirstLevel, self.orbWTA_K, 0, self.orbPatchSize, self.orbFastThreshold)
             # 检测SIFT特征点，并计算描述子
-            (kps, features) = descriptor.detectAndCompute(image, None)
+            kps, features = descriptor.detectAndCompute(image, None)
             # 将结果转换成NumPy数组
             kps = np.float32([kp.pt for kp in kps])
         else:                           # GPU mode
             if featureMethod == "sift":
                 # 目前GPU-SIFT尚未开发，先采用CPU版本的替代
                 descriptor = cv2.xfeatures2d.SIFT_create()
-                (kps, features) = descriptor.detectAndCompute(image, None)
+                kps, features = descriptor.detectAndCompute(image, None)
                 kps = np.float32([kp.pt for kp in kps])
             elif featureMethod == "surf":
-                descriptor = cv2.xfeatures2d.SURF_create()
+                kps, features = self.npToKpsAndDescriptors(myGpuFeatures.detectAndDescribeBySurf(image, self.surfHessianThreshold, self.surfNOctaves,self.surfNOctaveLayers, self.surfIsExtended, self.surfKeypointsRatio, self.surfIsUpright))
             elif featureMethod == "orb":
-                descriptor = cv2.ORB_create(5000000)
+                kps, features = self.npToKpsAndDescriptors(myGpuFeatures.detectAndDescribeByOrb(image, self.orbNfeatures, self.orbScaleFactor, self.orbNlevels, self.orbEdgeThreshold, self.orbFirstLevel, self.orbWTA_K, 0, self.orbPatchSize, self.orbFastThreshold, self.orbBlurForDescriptor))
         # 返回特征点集，及对应的描述特征
         return (kps, features)
 
-    def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio):
+    def matchDescriptors(self, featuresA, featuresB):
         '''
         匹配特征点
         :param self:
@@ -229,18 +244,33 @@ class Method():
         :param ratio: 最近邻和次近邻的比例
         :return:返回匹配的对数
         '''
-        # 建立暴力匹配器
-        matcher = cv2.DescriptorMatcher_create("BruteForce")
-
-        # 使用KNN检测来自A、B图的SIFT特征匹配对，K=2，返回一个列表
-        rawMatches = matcher.knnMatch(featuresA, featuresB, 2)
-        matches = []
-        for m in rawMatches:
-        # 当最近距离跟次近距离的比值小于ratio值时，保留此匹配对
-            if len(m) == 2 and m[0].distance < m[1].distance * ratio:
-                # 存储两个点在featuresA, featuresB中的索引值
-                matches.append((m[0].trainIdx, m[0].queryIdx))
-        self.printAndWrite("  The number of matches is " + str(len(matches)))
+        if self.isGPUAvailable == False:        # CPU Mode
+            # 建立暴力匹配器
+            if self.featureMethod == "surf" or self.featureMethod == "sift":
+                matcher = cv2.DescriptorMatcher_create("BruteForce")
+                # 使用KNN检测来自A、B图的SIFT特征匹配对，K=2，返回一个列表
+                rawMatches = matcher.knnMatch(featuresA, featuresB, 2)
+                matches = []
+                for m in rawMatches:
+                # 当最近距离跟次近距离的比值小于ratio值时，保留此匹配对
+                    if len(m) == 2 and m[0].distance < m[1].distance * self.searchRatio:
+                        # 存储两个点在featuresA, featuresB中的索引值
+                        matches.append((m[0].trainIdx, m[0].queryIdx))
+            elif self.featureMethod == "orb":
+                matcher = cv2.DescriptorMatcher_create("BruteForce-Hamming")
+                rawMatches = matcher.match(featuresA, featuresB)
+                matches = []
+                for m in rawMatches:
+                    # 当最近距离跟次近距离的比值小于ratio值时，保留此匹配对
+                    if len(m) == 2 and m[0].distance < m[1].distance * self.searchRatio:
+                        # 存储两个点在featuresA, featuresB中的索引值
+                        matches.append((m[0].trainIdx, m[0].queryIdx))
+            # self.printAndWrite("  The number of matches is " + str(len(matches)))
+        else:                                   # GPU Mode
+            if self.featureMethod == "surf":
+                matches = self.npToListForMatches(myGpuFeatures.matchDescriptors(np.array(featuresA), np.array(featuresB), 2, self.searchRatio))
+            elif self.featureMethod == "orb":
+                matches = self.npToListForMatches(myGpuFeatures.matchDescriptors(np.array(featuresA), np.array(featuresB), 3, self.orbMaxDistance))
         return matches
 
     def resizeImg(self, image, resizeTimes, interMethod = cv2.INTER_AREA):
@@ -289,3 +319,12 @@ class Method():
         else:
             resultImage = image
         return resultImage
+
+if __name__=="__main__":
+    image = cv2.imread("D:\\Coding_Test\\Python\\ImageStitch\\images\\zirconSmall\\1\\WJE068-F (1).jpg", 0)
+    method = Method()
+    kps, descriptors = method.detectAndDescribe(image, 'orb')
+    print(len(kps))
+    print(descriptors.shape)
+    print(kps[0])
+    print(descriptors[0, :])
