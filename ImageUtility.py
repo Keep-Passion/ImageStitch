@@ -162,7 +162,7 @@ class Method():
         if len(matches) == 0:
             return (totalStatus, [0, 0], 0)
         # 计算视角变换矩阵
-        # H1 = cv2.getAffineTransform(ptsA, ptsB)
+        H1 = cv2.getAffineTransform(ptsA, ptsB)
         # print("H1")
         # print(H1)
         (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, 3, 0.9)
@@ -249,7 +249,7 @@ class Method():
         :param ratio: 最近邻和次近邻的比例
         :return:返回匹配的对数
         '''
-        if self.isGPUAvailable == False:        # CPU Mode
+        if self.isGPUAvailable == True:        # CPU Mode
             # 建立暴力匹配器
             if self.featureMethod == "surf" or self.featureMethod == "sift":
                 matcher = cv2.DescriptorMatcher_create("BruteForce")
