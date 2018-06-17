@@ -8,12 +8,12 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
-import myGpuSurf
-
+from phasecorrelation import *
+import time
 
 class ImageFeature():
     # 用来保存串行全局拼接中的第二张图像的特征点和描述子，为后续加速拼接使用
-    isBreak = True  # 判断是否上一次中断
+    isBreak = True      # 判断是否上一次中断
     kps = None
     feature = None
 
@@ -22,48 +22,13 @@ class Stitcher(Utility.Method):
     '''
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
 	'''
-    direction = 1  # 1： 第一张图像在上，第二张图像在下；   2： 第一张图像在左，第二张图像在右；
-    # 3： 第一张图像在下，第二张图像在上；   4： 第一张图像在右，第二张图像在左；
+    direction = 1               # 1： 第一张图像在上，第二张图像在下；   2： 第一张图像在左，第二张图像在右；
+                                # 3： 第一张图像在下，第二张图像在上；   4： 第一张图像在右，第二张图像在左；
     directIncre = 1
-    featureMethod = "surf"  # "sift","surf" or "orb"
-    searchRatio = 0.75  # 0.75 is common value for matches
-    offsetCaculate = "mode"  # "mode" or "ransac"
-    offsetEvaluate = 10  # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
-    roiRatio = 0.1  # roi length for stitching in first direction
     fuseMethod = "notFuse"
-    isEnhance = False
-    isClahe = False
-    clipLimit = 20
-    tileSize = 5
     phaseResponseThreshold = 0.15
-    overlapRatio = []
+    phase = phaseCorrelation()
     tempImageFeature = ImageFeature()
-    isGPUAvailable = True
-    keypointsRatio = 0.005
-
-    def npToListForKeypoints(self, array):
-        '''
-        Convert array to List, used for keypoints from GPUDLL to python List
-        :param array: array from GPUDLL
-        :return:
-        '''
-        kps = []
-        row, col = array.shape
-        for i in range(row):
-            kps.append([array[i, 0], array[i, 1]])
-        return kps
-
-    def npToListForMatches(self, array):
-        '''
-        Convert array to List, used for DMatches from GPUDLL to python List
-        :param array: array from GPUDLL
-        :return:
-        '''
-        descritpors = []
-        row, col = array.shape
-        for i in range(row):
-            descritpors.append((array[i, 0], array[i, 1]))
-        return descritpors
 
     def directionIncrease(self, direction):
         direction += self.directIncre
@@ -91,8 +56,7 @@ class Stitcher(Utility.Method):
             else:
                 (status, offset) = caculateOffsetMethod([imageA, imageB])
             if status == False:
-                describtion = "  " + str(fileList[fileIndex]) + " and " + str(
-                    fileList[fileIndex + 1]) + " can not be stitched"
+                describtion = "  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched"
                 break
             else:
                 offsetList.append(offset)
@@ -100,32 +64,12 @@ class Stitcher(Utility.Method):
         endTime = time.time()
 
         self.printAndWrite("The time of registering is " + str(endTime - startTime) + "s")
-        self.printAndWrite("  The offsetList is " + str(offsetList))
 
         # stitching and fusing
         self.printAndWrite("start stitching")
         startTime = time.time()
-        dxSum = 0;
-        dySum = 0
-        stitchImage = cv2.imread(fileList[0], 0)
-        offsetListNum = len(offsetList)
-
-        for fileIndex in range(0, offsetListNum):
-            self.printAndWrite("  stitching " + str(fileList[fileIndex + 1]))
-            imageB = cv2.imread(fileList[fileIndex + 1], 0)
-            dxSum = offsetList[fileIndex][0] + dxSum
-            dySum = offsetList[fileIndex][1] + dySum
-            offset = [dxSum, dySum]
-            self.printAndWrite("  The offsetX is " + str(offsetList[fileIndex][0]) + " and the offsetY is " + str(
-                offsetList[fileIndex][1]))
-            self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
-            (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB) = self.getStitchByOffset(
-                [stitchImage, imageB], offset)
-            if dxSum < 0:
-                dxSum = 0
-            if dySum < 0:
-                dySum = 0
-
+        # offsetList = [[1784, 2], [1805, 2], [1809, 2], [1775, 2], [1760, 2], [1846, 2], [1809, 1], [1812, 2], [1786, 1], [1818, 3], [1786, 2], [1802, 2], [1722, 1], [1211, 1], [-10, 2411], [-1734, -1], [-1808, -1], [-1788, -3], [-1754, -1], [-1727, -2], [-1790, -3], [-1785, -2], [-1778, -1], [-1807, -2], [-1767, -2], [-1822, -3], [-1677, -2], [-1778, -2], [-1440, -1], [-2, 2410], [1758, 2], [1792, 2], [1794, 2], [1840, 3], [1782, 2], [1802, 3], [1782, 2], [1763, 3], [1738, 2], [1837, 3], [1781, 2], [1788, 18], [1712, 0], [1271, -11], [-3, 2478], [-1787, -1], [-1812, -2], [-1822, -2], [-1762, -1], [-1725, -2], [-1884, -2], [-1754, -2], [-1747, -1], [-1666, -1], [-1874, -3], [-1695, -2], [-1672, -1], [-1816, -2], [-1411, -1], [-4, 2431], [1874, 3], [1706, -3], [1782, 2], [1794, 2], [1732, 3], [1838, 3], [1721, 1], [1783, 3], [1805, 2], [1725, 3], [1828, 1], [1774, 3], [1776, 1], [1201, 1], [-16, 2405], [-1821, 0], [-1843, -2], [-1758, -2], [-1742, -3], [-1814, -2], [-1817, -2], [-1848, -2], [-1768, -2], [-1749, -2], [-1765, -2], [-1659, -2], [-1832, -2], [-1791, -2], [-1197, -1]]
+        stitchImage = self.getStitchByOffset(fileList, offsetList)
         endTime = time.time()
         self.printAndWrite("The time of fusing is " + str(endTime - startTime) + "s")
 
@@ -146,8 +90,8 @@ class Stitcher(Utility.Method):
             else:
                 startNum = startNum + status[1] + 1
 
-            self.printAndWrite("status[1] = " + str(status[1]))
-            self.printAndWrite("startNum = " + str(startNum))
+            # self.printAndWrite("status[1] = " + str(status[1]))
+            # self.printAndWrite("startNum = "+str(startNum))
             if startNum == totalNum:
                 break
             if startNum == (totalNum - 1):
@@ -156,9 +100,8 @@ class Stitcher(Utility.Method):
             self.printAndWrite("stitching Break, start from " + str(fileList[startNum]) + " again")
         return result
 
-    def imageSetStitch(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum=1,
-                       fileExtension="jpg", outputfileExtension="jpg"):
-        for i in range(startNum, fileNum + 1):
+    def imageSetStitch(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
+        for i in range(startNum, fileNum+1):
             fileAddress = projectAddress + "\\" + str(i) + "\\"
             fileList = glob.glob(fileAddress + "*." + fileExtension)
             if not os.path.exists(outputAddress):
@@ -170,9 +113,9 @@ class Stitcher(Utility.Method):
             if status == False:
                 self.printAndWrite("stitching Failed")
 
-    def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum=1,
-                                  fileExtension="jpg", outputfileExtension="jpg"):
-        for i in range(startNum, fileNum + 1):
+    def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
+        for i in range(startNum, fileNum+1):
+            startTime = time.time()
             fileAddress = projectAddress + "\\" + str(i) + "\\"
             fileList = glob.glob(fileAddress + "*." + fileExtension)
             if not os.path.exists(outputAddress):
@@ -185,10 +128,10 @@ class Stitcher(Utility.Method):
                 # cv2.imwrite(outputAddress + "\\" + outputName + "." + outputfileExtension, result[0])
             else:
                 for j in range(0, len(result)):
-                    cv2.imwrite(
-                        outputAddress + "\\stitching_result_" + str(i) + "_" + str(j + 1) + "." + outputfileExtension,
-                        result[j])
+                    cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "_" + str(j+1) + "." + outputfileExtension, result[j])
                     # cv2.imwrite(outputAddress + "\\" + outputName + "_" + str(j + 1) + "." + outputfileExtension,result[j])
+            endTime = time.time()
+            print("Time Consuming for " + fileAddress + " is " + str(endTime - startTime))
 
     def calculateOffsetForPhaseCorrleate(self, dirAddress):
         (dir1, dir2) = dirAddress
@@ -218,26 +161,24 @@ class Stitcher(Utility.Method):
         (imageA, imageB) = images
         offset = [0, 0]
         status = False
-        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int) + 1
+        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int)+ 1
         iniDirection = self.direction
         localDirection = iniDirection
         for i in range(1, maxI):
-            self.printAndWrite("  i=" + str(i) + " and maxI=" + str(maxI))
-            while (True):
+            # self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI))
+            while(True):
                 # get the roi region of images
-                self.printAndWrite("  localDirection=" + str(localDirection))
-                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first",
-                                                            searchRatio=i * self.roiRatio)
-                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second",
-                                                            searchRatio=i * self.roiRatio)
+                # self.printAndWrite("  localDirection=" + str(localDirection))
+                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first", searchRatio = i * self.roiRatio)
+                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second", searchRatio = i * self.roiRatio)
 
                 # hann = cv2.createHanningWindow(winSize=(roiImageA.shape[1], roiImageA.shape[0]), type=5)
                 # (offsetTemp, response) = cv2.phaseCorrelate(np.float32(roiImageA), np.float32(roiImageB), window=hann)
                 (offsetTemp, response) = cv2.phaseCorrelate(np.float64(roiImageA), np.float64(roiImageB))
                 offset[0] = np.int(offsetTemp[1])
                 offset[1] = np.int(offsetTemp[0])
-                self.printAndWrite("offset: " + str(offset))
-                self.printAndWrite("respnse: " + str(response))
+                # self.printAndWrite("offset: " + str(offset))
+                # self.printAndWrite("respnse: " + str(response))
                 if response > self.phaseResponseThreshold:
                     status = True
                 if status == True:
@@ -285,41 +226,25 @@ class Stitcher(Utility.Method):
                 imageB = cv2.equalizeHist(imageB)
         # get the feature points
         if self.tempImageFeature.isBreak == True:
-            if self.isGPUAvailable == True:
-                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.keypointsRatio, self.searchRatio)
-                kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
-                featuresA = myGpuSurf.getImageADescriptors()
-                kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
-                featuresB = myGpuSurf.getImageBDescriptors()
-            else:
-                (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
-                (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            (kpsA, featuresA) = self.detectAndDescribe(imageA, featureMethod=self.featureMethod)
+            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
         else:
             kpsA = self.tempImageFeature.kps
             featuresA = self.tempImageFeature.feature
-            if self.isGPUAvailable == True:
-                myGpuSurf.matchFeaturesBySurf(imageA, imageB, self.searchRatio)
-                kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
-                featuresB = myGpuSurf.getImageBDescriptors()
-            else:
-                (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
+            (kpsB, featuresB) = self.detectAndDescribe(imageB, featureMethod=self.featureMethod)
             self.tempImageFeature.isBreak = False
             self.tempImageFeature.kps = kpsB
             self.tempImageFeature.feature = featuresB
         if featuresA is not None and featuresB is not None:
-            if self.isGPUAvailable == True:
-                matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
-            else:
-                matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+            matches = self.matchDescriptors(featuresA, featuresB)
             # match all the feature points
             if self.offsetCaculate == "mode":
-                (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate=self.offsetEvaluate)
+                (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
             elif self.offsetCaculate == "ransac":
-                (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches,
-                                                                   offsetEvaluate=self.offsetEvaluate)
+                (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
         if status == False:
             self.tempImageFeature.isBreak = True
             return (status, "  The two images can not match")
@@ -341,48 +266,35 @@ class Stitcher(Utility.Method):
         (imageA, imageB) = images
         offset = [0, 0]
         status = False
-        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int) + 1
+        maxI = (np.floor(0.5 / self.roiRatio) + 1).astype(int)+ 1
         iniDirection = self.direction
         localDirection = iniDirection
         for i in range(1, maxI):
-            self.printAndWrite("  i=" + str(i) + " and maxI=" + str(maxI))
-            while (True):
+            # self.printAndWrite("  i=" + str(i) + " and maxI="+str(maxI))
+            while(True):
                 # get the roi region of images
-                self.printAndWrite("  localDirection=" + str(localDirection))
-                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first",
-                                                            searchRatio=i * self.roiRatio)
-                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second",
-                                                            searchRatio=i * self.roiRatio)
+                # self.printAndWrite("  localDirection=" + str(localDirection))
+                roiImageA = self.getROIRegionForIncreMethod(imageA, direction=localDirection, order="first", searchRatio = i * self.roiRatio)
+                roiImageB = self.getROIRegionForIncreMethod(imageB, direction=localDirection, order="second", searchRatio = i * self.roiRatio)
 
                 if self.isEnhance == True:
                     if self.isClahe == True:
-                        clahe = cv2.createCLAHE(clipLimit=self.clipLimit, tileGridSize=(self.tileSize, self.tileSize))
+                        clahe = cv2.createCLAHE(clipLimit=self.clipLimit,tileGridSize=(self.tileSize, self.tileSize))
                         roiImageA = clahe.apply(roiImageA)
                         roiImageB = clahe.apply(roiImageB)
                     elif self.isClahe == False:
                         roiImageA = cv2.equalizeHist(roiImageA)
                         roiImageB = cv2.equalizeHist(roiImageB)
                 # get the feature points
-                if self.isGPUAvailable == True:
-                    myGpuSurf.matchFeaturesBySurf(roiImageA, roiImageB, self.keypointsRatio, self.searchRatio)
-                    kpsA = self.npToListForKeypoints(myGpuSurf.getImageAKeyPoints())
-                    featuresA = myGpuSurf.getImageADescriptors()
-                    kpsB = self.npToListForKeypoints(myGpuSurf.getImageBKeyPoints())
-                    featuresB = myGpuSurf.getImageBDescriptors()
-                else:
-                    (kpsA, featuresA) = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
-                    (kpsB, featuresB) = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
+                kpsA, featuresA = self.detectAndDescribe(roiImageA, featureMethod=self.featureMethod)
+                kpsB, featuresB = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
                 if featuresA is not None and featuresB is not None:
-                    if self.isGPUAvailable == True:
-                        matches = self.npToListForMatches(myGpuSurf.getGoodMatches())
-                    else:
-                        matches = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, self.searchRatio)
+                    matches = self.matchDescriptors(featuresA, featuresB)
                     # match all the feature points
                     if self.offsetCaculate == "mode":
-                        (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate=self.offsetEvaluate)
+                        (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
                     elif self.offsetCaculate == "ransac":
-                        (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches,
-                                                                           offsetEvaluate=self.offsetEvaluate)
+                        (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
                 if status == True:
                     break
                 else:
@@ -406,72 +318,103 @@ class Stitcher(Utility.Method):
             self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
             return (status, offset)
 
-    def getStitchByOffset(self, images, offset):
-        (imageA, imageB) = images
-        (hA, wA) = imageA.shape[:2]
-        (hB, wB) = imageB.shape[:2]
-        dx = offset[0];
-        dy = offset[1]
-        mask = np.zeros(imageB.shape, dtype=np.uint8)
+    def getStitchByOffset(self, fileList, offsetListOrigin):
+        '''
+        通过偏移量列表和文件列表得到最终的拼接结果
+        :param fileList: 图像列表
+        :param offsetListOrigin: 偏移量列表
+        :return: ndaarry，图像
+        '''
+        # 如果你不细心，不要碰这段代码
+        # 已优化到根据指针来控制拼接，CPU下最快了
+        dxSum = dySum = 0
+        imageList = []
+        imageList.append(cv2.imread(fileList[0], 0))
+        resultRow = imageList[0].shape[0]         # 拼接最终结果的横轴长度,先赋值第一个图像的横轴
+        resultCol = imageList[0].shape[1]         # 拼接最终结果的纵轴长度,先赋值第一个图像的纵轴
+        offsetListOrigin.insert(0, [0, 0])        # 增加第一张图像相对于最终结果的原点的偏移量
 
-        if dx >= 0 and dy >= 0:
-            # The first image is located at the left top, the second image located at the right bottom
-            stitchImage = np.zeros((max(hA, dx + hB), max(dy + wB, wA)), dtype=np.int) - 1
-            roi_ltx = dx;
-            roi_lty = dy
-            roi_rbx = min(dx + hB, hA);
-            roi_rby = min(dy + wB, wA)
-            stitchImage[0: hA, 0:wA] = imageA
-            roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[dx: dx + hB, dy: dy + wB] = imageB
-            roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-        elif dx >= 0 and dy < 0:
-            # The first image is located at the right top, the second image located at the left bottom
-            stitchImage = np.zeros((max(hA, dx + hB), -dy + wA), dtype=np.int) - 1
-            roi_ltx = dx;
-            roi_lty = -dy
-            roi_rbx = hA;
-            roi_rby = min(-dy + wA, wB)
-            stitchImage[0: hA, -dy:-dy + wA] = imageA
-            roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[dx: dx + hB, 0: wB] = imageB
-            roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-        elif dx < 0 and dy >= 0:
-            # The first image is located at the left bottom, the second image located at the right top
-            stitchImage = np.zeros((max(-dx + hA, hB), max(dy + wB, wA)), dtype=np.int) - 1
-            roi_ltx = -dx;
-            roi_lty = dy
-            roi_rbx = min(-dx + hA, hB);
-            roi_rby = min(dy + wB, wA)
-            stitchImage[-dx: -dx + hA, 0: wA] = imageA
-            roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[0: hB, dy: dy + wB] = imageB
-            roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-        elif dx < 0 and dy < 0:
-            # The first image is located at the right bottom, the second image located at the left top
-            stitchImage = np.zeros((-dx + hA, -dy + wA), dtype=np.int) - 1
-            roi_ltx = -dx;
-            roi_lty = - dy
-            roi_rbx = hB;
-            roi_rby = wB
-            stitchImage[-dx: -dx + hA, -dy: -dy + wA] = imageA
-            roiImageRegionA = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-            stitchImage[0: hB, 0: wB] = imageB
-            roiImageRegionB = stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby].copy()
-        # cv2.imshow("roiImageRegionA", roiImageRegionA)
-        # cv2.imshow("roiImageRegionB", roiImageRegionB)
-        # cv2.waitKey(0)
-        fuseRegion = self.fuseImage([roiImageRegionA, roiImageRegionB], dx, dy)
-        stitchImage[roi_ltx: roi_rbx, roi_lty: roi_rby] = fuseRegion.copy()
-        stitchImage[stitchImage == -1] = 0
-        stitchImage = stitchImage.astype(np.uint8)
-        return (stitchImage, fuseRegion, roiImageRegionA, roiImageRegionB)
+        rangeX = [[0,0] for x in range(len(offsetListOrigin))]  # 主要用于记录X方向最大最小边界
+        rangeY = [[0, 0] for x in range(len(offsetListOrigin))] # 主要用于记录Y方向最大最小边界
+        offsetList = offsetListOrigin.copy()
+        rangeX[0][1] = imageList[0].shape[0]
+        rangeY[0][1] = imageList[0].shape[1]
+
+        for i in range(1, len(offsetList)):
+            # self.printAndWrite("  stitching " + str(fileList[i]))
+            # 适用于流形拼接的校正,并更新最终图像大小
+            tempImage = cv2.imread(fileList[i], 0)
+            dxSum = dxSum + offsetList[i][0]
+            dySum = dySum + offsetList[i][1]
+            # self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
+            if dxSum <= 0:
+                for j in range(0, i):
+                    offsetList[j][0] = offsetList[j][0] + abs(dxSum)
+                    rangeX[j][0] = rangeX[j][0] + abs(dxSum)
+                    rangeX[j][1] = rangeX[j][1] + abs(dxSum)
+                resultRow = resultRow + abs(dxSum)
+                rangeX[i][1] = resultRow
+                dxSum = rangeX[i][0] = offsetList[i][0] = 0
+            else:
+                offsetList[i][0] = dxSum
+                resultRow = max(resultRow, dxSum + tempImage.shape[0])
+                rangeX[i][1] = resultRow
+            if dySum <= 0:
+                for j in range(0, i):
+                    offsetList[j][1] = offsetList[j][1] + abs(dySum)
+                    rangeY[j][0] = rangeY[j][0] + abs(dySum)
+                    rangeY[j][1] = rangeY[j][1] + abs(dySum)
+                resultCol = resultCol + abs(dySum)
+                rangeY[i][1] = resultCol
+                dySum = rangeY[i][0] = offsetList[i][1] = 0
+            else:
+                offsetList[i][1] = dySum
+                resultCol = max(resultCol, dySum + tempImage.shape[1])
+                rangeY[i][1] = resultCol
+            imageList.append(tempImage)
+        stitchResult = np.zeros((resultRow, resultCol), np.int) - 1
+        self.printAndWrite("  The rectified offsetList is " + str(offsetList))
+        # 如上算出各个图像相对于原点偏移量，并最终计算出输出图像大小，并构造矩阵，如下开始赋值
+        for i in range(0, len(offsetList)):
+            self.printAndWrite("  stitching " + str(fileList[i]))
+            if i == 0:
+                stitchResult[offsetList[0][0]: offsetList[0][0] + imageList[0].shape[0], offsetList[0][1]: offsetList[0][1] + imageList[0].shape[1]] = imageList[0]
+            else:
+                if self.fuseMethod == "notFuse":
+                    # 适用于无图像融合，直接覆盖
+                    # self.printAndWrite("Stitch " + str(i+1) + "th, the roi_ltx is " + str(offsetList[i][0]) + " and the roi_lty is " + str(offsetList[i][1]))
+                    stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
+                else:
+                    # 适用于图像融合算法，切出 roiA 和 roiB 供图像融合
+                    minOccupyX = rangeX[i-1][0]
+                    maxOccupyX = rangeX[i-1][1]
+                    minOccupyY = rangeY[i-1][0]
+                    maxOccupyY = rangeY[i-1][1]
+                    # self.printAndWrite("Stitch " + str(i + 1) + "th, the offsetList[i][0] is " + str(
+                    #     offsetList[i][0]) + " and the offsetList[i][1] is " + str(offsetList[i][1]))
+                    # self.printAndWrite("Stitch " + str(i + 1) + "th, the minOccupyX is " + str(
+                    #     minOccupyX) + " and the maxOccupyX is " + str(maxOccupyX) + " and the minOccupyY is " + str(
+                    #     minOccupyY) + " and the maxOccupyY is " + str(maxOccupyY))
+                    roi_ltx = max(offsetList[i][0], minOccupyX)
+                    roi_lty = max(offsetList[i][1], minOccupyY)
+                    roi_rbx = min(offsetList[i][0] + imageList[i].shape[0], maxOccupyX)
+                    roi_rby = min(offsetList[i][1] + imageList[i].shape[1], maxOccupyY)
+                    # self.printAndWrite("Stitch " + str(i + 1) + "th, the roi_ltx is " + str(
+                    #     roi_ltx) + " and the roi_lty is " + str(roi_lty) + " and the roi_rbx is " + str(
+                    #     roi_rbx) + " and the roi_rby is " + str(roi_rby))
+                    roiImageRegionA = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
+                    stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
+                    roiImageRegionB = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
+                    stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby] = self.fuseImage([roiImageRegionA, roiImageRegionB], offsetListOrigin[i][0], offsetListOrigin[i][1])
+        stitchResult[stitchResult == -1] = 0
+        return stitchResult.astype(np.uint8)
 
     def fuseImage(self, images, dx, dy):
         (imageA, imageB) = images
-        # cv2.imshow("A", imageA)
-        # cv2.imshow("B", imageB)
-        # cv2.waitKey(0)
+        # cv2.namedWindow("A", 0)
+        # cv2.namedWindow("B", 0)
+        # cv2.imshow("A", imageA.astype(np.uint8))
+        # cv2.imshow("B", imageB.astype(np.uint8))
         fuseRegion = np.zeros(imageA.shape, np.uint8)
         # imageA[imageA == 0] = imageB[imageA == 0]
         # imageB[imageB == 0] = imageA[imageB == 0]
@@ -514,7 +457,7 @@ class Stitcher(Utility.Method):
         return fuseRegion
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     stitcher = Stitcher()
     imageA = cv2.imread(".\\images\\dendriticCrystal\\1\\1-044.jpg", 0)
     imageB = cv2.imread(".\\images\\dendriticCrystal\\1\\1-045.jpg", 0)

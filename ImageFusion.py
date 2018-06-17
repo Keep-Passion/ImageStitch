@@ -36,7 +36,7 @@ class ImageFusion(Utility.Method):
         (imageA, imageB) = images
         fuseRegion = np.minimum(imageA, imageB)
         return fuseRegion
-
+    
     def getWeightsMatrix(self, images):
         '''
         获取权值矩阵
@@ -55,22 +55,21 @@ class ImageFusion(Utility.Method):
         compareList.append(np.count_nonzero(imageA[row // 2: row, 0: col // 2] > 0))
         compareList.append(np.count_nonzero(imageA[row // 2: row, col // 2: col] > 0))
         compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col] > 0))
-        self.printAndWrite(compareList)
+        # self.printAndWrite("    compareList:" + str(compareList))
         index = compareList.index(min(compareList))
         if index == 2:
             # 重合区域在imageA的上左部分
-            self.printAndWrite("上左")
-            rowIndex = 0;
-            colIndex = 0;
+            # self.printAndWrite("上左")
+            rowIndex = 0;   colIndex = 0;
             for j in range(1, col):
                 for i in range(row - 1, -1, -1):
-                    if imageA[i, col - j] != 0:
+                    if imageA[i, col - j] != -1:
                         rowIndex = i + 1
                         break
                 if rowIndex != 0:
                     break
             for i in range(col - 1, -1, -1):
-                if imageA[rowIndex, i] != 0:
+                if imageA[rowIndex, i] != -1:
                     colIndex = i + 1
                     break
             # 赋值
@@ -84,21 +83,20 @@ class ImageFusion(Utility.Method):
                 weightMatB_2[:, colIndex - i] = (colIndex - i) * 1 / colIndex
             weightMatB = weightMatB_1 * weightMatB_2
             weightMatA = 1 - weightMatB
-        # elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
+        #elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
         elif index == 3:
             # 重合区域在imageA的下左部分
-            self.printAndWrite("下左")
-            rowIndex = 0;
-            colIndex = 0;
+            # self.printAndWrite("下左")
+            rowIndex = 0;       colIndex = 0;
             for j in range(1, col):
                 for i in range(row):
-                    if imageA[i, col - j] != 0:
+                    if imageA[i, col - j] != -1:
                         rowIndex = i - 1
                         break
                 if rowIndex != 0:
                     break
             for i in range(col - 1, -1, -1):
-                if imageA[rowIndex, i] != 0:
+                if imageA[rowIndex, i] != -1:
                     colIndex = i + 1
                     break
             # 赋值
@@ -115,18 +113,18 @@ class ImageFusion(Utility.Method):
         # elif rightCenter != 0 and bottomCenter != 0 and upCenter == 0 and leftCenter == 0:
         elif index == 0:
             # 重合区域在imageA的下右部分
-            self.printAndWrite("下右")
+            # self.printAndWrite("下右")
             rowIndex = 0;
             colIndex = 0;
             for j in range(0, col):
                 for i in range(row):
-                    if imageA[i, j] != 0:
+                    if imageA[i, j] != -1:
                         rowIndex = i - 1
                         break
                 if rowIndex != 0:
                     break
             for i in range(col):
-                if imageA[rowIndex, i] != 0:
+                if imageA[rowIndex, i] != -1:
                     colIndex = i - 1
                     break
             # 赋值
@@ -143,18 +141,17 @@ class ImageFusion(Utility.Method):
         # elif upCenter != 0 and rightCenter != 0 and leftCenter == 0 and bottomCenter == 0:
         elif index == 1:
             # 重合区域在imageA的上右部分
-            self.printAndWrite("上右")
-            rowIndex = 0;
-            colIndex = 0;
+            # self.printAndWrite("上右")
+            rowIndex = 0;   colIndex = 0;
             for j in range(0, col):
                 for i in range(row - 1, -1, -1):
-                    if imageA[i, j] != 0:
+                    if imageA[i, j] != -1:
                         rowIndex = i + 1
                         break
                 if rowIndex != 0:
                     break
             for i in range(col):
-                if imageA[rowIndex, i] != 0:
+                if imageA[rowIndex, i] != -1:
                     colIndex = i - 1
                     break
             for i in range(rowIndex + 1):
@@ -182,12 +179,12 @@ class ImageFusion(Utility.Method):
         row, col = imageA.shape[:2]
         weightMatA = np.ones(imageA.shape, dtype=np.float32)
         weightMatB = np.ones(imageA.shape, dtype=np.float32)
-        self.printAndWrite("ratio: " + str(np.count_nonzero(imageA > 0) / imageA.size))
-        if np.count_nonzero(imageA > 0) / imageA.size > 0.65:
+        # self.printAndWrite("    ratio: "  + str(np.count_nonzero(imageA > -1) / imageA.size))
+        if np.count_nonzero(imageA > -1) / imageA.size > 0.65:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
-                self.printAndWrite("普通融合-水平方向")
+                # self.printAndWrite("普通融合-水平方向")
                 for i in range(0, col):
                     if dy <= 0:
                         weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
@@ -197,7 +194,7 @@ class ImageFusion(Utility.Method):
                         weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
             elif row < col:
-                self.printAndWrite("普通融合-竖直方向")
+                # self.printAndWrite("普通融合-竖直方向")
                 for i in range(0, row):
                     if dx <= 0:
                         weightMatA[i, :] = weightMatA[i, :] * i * 1.0 / row
@@ -207,13 +204,11 @@ class ImageFusion(Utility.Method):
                         weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
         else:
             # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
-            self.printAndWrite("拐角融合")
+            # self.printAndWrite("拐角融合")
             weightMatA, weightMatB = self.getWeightsMatrix(images)
-        imageA[imageA == -1] = 0;
-        imageB[imageB == -1] = 0;
+        imageA[imageA == -1] = 0;   imageB[imageB == -1] =0;
         result = weightMatA * imageA.astype(np.int) + weightMatB * imageB.astype(np.int)
-        result[result < 0] = 0;
-        result[result > 255] = 255
+        result[result < 0] = 0;     result[result > 255] = 255
         fuseRegion = np.uint8(result)
         return fuseRegion
 
@@ -229,12 +224,12 @@ class ImageFusion(Utility.Method):
         row, col = imageA.shape[:2]
         weightMatA = np.ones(imageA.shape, dtype=np.float64)
         weightMatB = np.ones(imageA.shape, dtype=np.float64)
-        self.printAndWrite("ratio: " + str(np.count_nonzero(imageA > 0) / imageA.size))
-        if np.count_nonzero(imageA > 0) / imageA.size > 0.65:
+        # self.printAndWrite("    ratio: " + str(np.count_nonzero(imageA > -1) / imageA.size))
+        if np.count_nonzero(imageA > -1) / imageA.size > 0.65:
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
-                self.printAndWrite("普通融合-水平方向")
+                # self.printAndWrite("普通融合-水平方向")
                 for i in range(0, col):
                     if dy <= 0:
                         weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
@@ -244,7 +239,7 @@ class ImageFusion(Utility.Method):
                         weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
             elif row < col:
-                self.printAndWrite("普通融合-竖直方向")
+                # self.printAndWrite("普通融合-竖直方向")
                 for i in range(0, row):
                     if dx <= 0:
                         weightMatA[i, :] = weightMatA[i, :] * i * 1.0 / row
@@ -254,17 +249,15 @@ class ImageFusion(Utility.Method):
                         weightMatB[row - i - 1, :] = weightMatB[row - i - 1, :] * (row - i) * 1.0 / row
         else:
             # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
-            self.printAndWrite("拐角融合")
+            # self.printAndWrite("拐角融合")
             weightMatA, weightMatB = self.getWeightsMatrix(images)
 
         weightMatA = np.power(np.sin(weightMatA * math.pi / 2), 2)
         weightMatB = 1 - weightMatA
 
-        imageA[imageA == -1] = 0;
-        imageB[imageB == -1] = 0;
+        imageA[imageA == -1] = 0;   imageB[imageB == -1] =0;
         result = weightMatA * imageA.astype(np.int) + weightMatB * imageB.astype(np.int)
-        result[result < 0] = 0;
-        result[result > 255] = 255
+        result[result < 0] = 0;     result[result > 255] = 255
         fuseRegion = np.uint8(result)
         return fuseRegion
 
@@ -273,7 +266,7 @@ class ImageFusion(Utility.Method):
         imagesReturn = np.uint8(self.BlendArbitrary2(imageA, imageB, 4))
         return imagesReturn
 
-    # 带权拉普拉斯金字塔融合
+    #带权拉普拉斯金字塔融合
     def BlendArbitrary(self, img1, img2, R, level):
         # img1 and img2 have the same size
         # R represents the region to be combined
@@ -287,11 +280,11 @@ class ImageFusion(Utility.Method):
             GRN.append(np.ones((GR[i].shape[0], GR[i].shape[1])) - GR[i])
         LC = []
         for i in range(level):
-            LC.append(LA[i] * GR[level - i - 1] + LB[i] * GRN[level - i - 1])
+            LC.append(LA[i] * GR[level - i -1] + LB[i] * GRN[level - i - 1])
         result = self.reconstruct(LC)
-        return result
+        return  result
 
-    # 均值融合
+    #均值融合
     def BlendArbitrary2(self, img1, img2, level):
         # img1 and img2 have the same size
         # R represents the region to be combined
@@ -306,7 +299,7 @@ class ImageFusion(Utility.Method):
 
     def LaplacianPyramid(self, img, level):
         gp = self.GaussianPyramid(img, level)
-        lp = [gp[level - 1]]
+        lp = [gp[level-1]]
         for i in range(level - 1, -1, -1):
             GE = cv2.pyrUp(gp[i])
             GE = cv2.resize(GE, (gp[i - 1].shape[1], gp[i - 1].shape[0]), interpolation=cv2.INTER_CUBIC)
@@ -318,7 +311,7 @@ class ImageFusion(Utility.Method):
         out = input_pyramid[0]
         for i in range(1, len(input_pyramid)):
             out = cv2.pyrUp(out)
-            out = cv2.resize(out, (input_pyramid[i].shape[1], input_pyramid[i].shape[0]), interpolation=cv2.INTER_CUBIC)
+            out = cv2.resize(out, (input_pyramid[i].shape[1],input_pyramid[i].shape[0]), interpolation = cv2.INTER_CUBIC)
             out = cv2.add(out, input_pyramid[i])
         return out
 
@@ -330,7 +323,7 @@ class ImageFusion(Utility.Method):
             gp.append(G)
         return gp
 
-    # 权值矩阵归一化
+    #权值矩阵归一化
     def stretchImage(self, Region):
         minI = Region.min()
         maxI = Region.max()
@@ -358,11 +351,11 @@ class ImageFusion(Utility.Method):
         fuseRegion = imageA.copy()
         fuseRegion[(1 - mask) == 0] = imageA[(1 - mask) == 0]
         fuseRegion[(1 - mask) == 1] = imageB[(1 - mask) == 1]
-        drawFuseRegion = self.drawOptimalLine(1 - mask, fuseRegion)
+        drawFuseRegion = self.drawOptimalLine(1- mask, fuseRegion)
         cv2.imwrite("optimalLine.jpg", drawFuseRegion)
-        cv2.imwrite("fuseRegion.jpg", np.uint8(self.BlendArbitrary(imageA, imageB, mask, 4)))
+        cv2.imwrite("fuseRegion.jpg", np.uint8(self.BlendArbitrary(imageA,imageB, mask, 4)))
         cv2.waitKey(0)
-        return np.uint8(self.BlendArbitrary(imageA, imageB, mask, 4))
+        return np.uint8(self.BlendArbitrary(imageA,imageB, mask, 4))
 
     def caculateVaule(self, images):
         (imageA, imageB) = images
@@ -373,8 +366,8 @@ class ImageFusion(Utility.Method):
                        [-1, 0, 1],
                        [-2, 0, 2]])
         Sy = np.array([[-2, -1, -2],
-                       [0, 0, 0],
-                       [2, 1, 2]])
+                       [ 0,  0,  0],
+                       [ 2,  1,  2]])
         Egeometry = np.power(cv2.filter2D(Ecolor, -1, Sx), 2) + np.power(cv2.filter2D(Ecolor, -1, Sy), 2)
 
         diff = np.abs(imageA - imageB) / np.maximum(imageA, imageB).max()
@@ -412,27 +405,22 @@ class ImageFusion(Utility.Method):
                     # print(indexMatrix[i, j])
                 elif j == col - 1:
                     dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[i, j]).min()
-                    indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[
-                        i, j]).argmin() - 1
+                    indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j]]) + value[i, j]).argmin() - 1
                 else:
-                    dpMatrix[i, j] = (
-                                np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[
-                            i, j]).min()
-                    indexMatrix[i, j] = (np.array(
-                        [dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[
-                                             i, j]).argmin() - 1
+                    dpMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).min()
+                    indexMatrix[i, j] = (np.array([dpMatrix[i - 1, j - 1], dpMatrix[i - 1, j], dpMatrix[i - 1, j + 1]]) + value[i, j]).argmin() - 1
         # print(indexMatrix)
         # generate the mask
         index = dpMatrix[row - 1, :].argmin()
         # print("here" + str(dpMatrix[row - 1, :]))
         # print(index)
         for j in range(index, col):
-            mask[row - 1, j] = 1
+            mask[row-1, j] = 1
         for i in range(row - 1, 1, -1):
             index = indexMatrix[i, index] + index
             # print(index)
             for j in range(index, col):
-                mask[i - 1, j] = 1
+                mask[i-1, j] = 1
         if direction == "vertical":
             mask = np.transpose(mask)
         return mask
@@ -448,8 +436,7 @@ class ImageFusion(Utility.Method):
                     break
         return drawing
 
-
-if __name__ == "__main__":
+if __name__=="__main__":
     # 测试
     num = 6
     A_1 = np.zeros((num, num), dtype=np.uint8)
