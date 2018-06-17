@@ -12,7 +12,7 @@ def stitchWithFeature():
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-    Stitcher.fuseMethod = "notFuse"
+    Stitcher.fuseMethod = "fadeInAndFadeOut"
     stitcher = Stitcher()
     startTime = time.time()
 
@@ -25,7 +25,7 @@ def stitchWithFeature():
     method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
     projectAddress = "images\\dendriticCrystal"
     outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearchIncre,
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearchIncre,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;

@@ -9,6 +9,7 @@ from numba import jit
 import ImageUtility as Utility
 import ImageFusion
 from phasecorrelation import *
+import time
 
 class ImageFeature():
     # 用来保存串行全局拼接中的第二张图像的特征点和描述子，为后续加速拼接使用
@@ -114,6 +115,7 @@ class Stitcher(Utility.Method):
 
     def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
         for i in range(startNum, fileNum+1):
+            startTime = time.time()
             fileAddress = projectAddress + "\\" + str(i) + "\\"
             fileList = glob.glob(fileAddress + "*." + fileExtension)
             if not os.path.exists(outputAddress):
@@ -128,6 +130,8 @@ class Stitcher(Utility.Method):
                 for j in range(0, len(result)):
                     cv2.imwrite(outputAddress + "\\stitching_result_" + str(i) + "_" + str(j+1) + "." + outputfileExtension, result[j])
                     # cv2.imwrite(outputAddress + "\\" + outputName + "_" + str(j + 1) + "." + outputfileExtension,result[j])
+            endTime = time.time()
+            print("Time Consuming for " + fileAddress + " is " + str(endTime - startTime))
 
     def calculateOffsetForPhaseCorrleate(self, dirAddress):
         (dir1, dir2) = dirAddress
