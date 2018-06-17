@@ -6,7 +6,7 @@ import os
 import time
 
 def stitchWithFeature():
-    Stitcher.featureMethod = "orb"     # "sift","surf" or "orb"
+    Stitcher.featureMethod = "surf"     # "sift","surf" or "orb"
     Stitcher.isGPUAvailable = True
     Stitcher.searchRatio = 0.75         # 0.75 is common value for matches
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
@@ -25,7 +25,7 @@ def stitchWithFeature():
     method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
     projectAddress = "images\\dendriticCrystal"
     outputAddress = "result\\" + method + "\\dendriticCrystal" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 11, stitcher.calculateOffsetForFeatureSearchIncre,
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearchIncre,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
     # Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;

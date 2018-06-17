@@ -24,11 +24,11 @@ class Method():
     surfNOctaves = 4
     surfNOctaveLayers = 3
     surfIsExtended = False
-    surfKeypointsRatio = 1
+    surfKeypointsRatio = 0.01
     surfIsUpright = False
 
     # 关于 GPU-ORB 的设置
-    orbNfeatures = 5000
+    orbNfeatures = 500
     orbScaleFactor = 1.2
     orbNlevels = 8
     orbEdgeThreshold = 31
@@ -36,13 +36,18 @@ class Method():
     orbWTA_K = 2
     orbPatchSize = 31
     orbFastThreshold = 20
-    orbBlurForDescriptor = False
-    orbMaxDistance = 10
+    orbBlurForDescriptor = True
+    orbMaxDistance = 30
 
     # 关于特征配准的设置
     offsetCaculate = "mode"     # "mode" or "ransac"
     offsetEvaluate = 3         # 40 menas nums of matches for mode, 3.0 menas  of matches for ransac
 
+    # 关于图像增强的操作
+    isEnhance = False
+    isClahe = False
+    clipLimit = 20
+    tileSize = 5
 
     # 向屏幕和文件打印输出内容
     def printAndWrite(self, content):
@@ -261,10 +266,7 @@ class Method():
                 rawMatches = matcher.match(featuresA, featuresB)
                 matches = []
                 for m in rawMatches:
-                    # 当最近距离跟次近距离的比值小于ratio值时，保留此匹配对
-                    if len(m) == 2 and m[0].distance < m[1].distance * self.searchRatio:
-                        # 存储两个点在featuresA, featuresB中的索引值
-                        matches.append((m[0].trainIdx, m[0].queryIdx))
+                    matches.append((m.trainIdx, m.queryIdx))
             # self.printAndWrite("  The number of matches is " + str(len(matches)))
         else:                                   # GPU Mode
             if self.featureMethod == "surf":
