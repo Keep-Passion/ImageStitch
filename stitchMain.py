@@ -67,5 +67,14 @@ def stitchWithPhase():
                             startNum=43, fileExtension="jpg", outputfileExtension="jpg")
     Stitcher.phase.shutdown()
 
+def paperExperiments():
+
+    dirs = os.listdir("images\\paperExperiments\\")
+    for dir in dirs:
+        for i in range(1, 11):
+            imageList = glob.glob(os.getcwd() + "\\images\\paperExperiments\\" + dir + "\\" + str(i) + "\\*.jpg")
+            print(dir + "-" + str(i) + ":" + str(len(imageList)))
+
 if __name__=="__main__":
-    stitchWithFeature()
+    paperExperiments()
+    # stitchWithFeature()
