@@ -23,7 +23,7 @@ class Method():
     surfHessianThreshold = 100.0
     surfNOctaves = 4
     surfNOctaveLayers = 3
-    surfIsExtended = False
+    surfIsExtended = True
     surfKeypointsRatio = 0.01
     surfIsUpright = False
 
@@ -249,7 +249,7 @@ class Method():
         :param ratio: 最近邻和次近邻的比例
         :return:返回匹配的对数
         '''
-        if self.isGPUAvailable == True:        # CPU Mode
+        if self.isGPUAvailable == False:        # CPU Mode
             # 建立暴力匹配器
             if self.featureMethod == "surf" or self.featureMethod == "sift":
                 matcher = cv2.DescriptorMatcher_create("BruteForce")
