@@ -348,7 +348,7 @@ class Stitcher(Utility.Method):
             # self.printAndWrite("  stitching " + str(fileList[i]))
             # 适用于流形拼接的校正,并更新最终图像大小
             # tempImage = cv2.imread(fileList[i], 0)
-            tempImage = cv2.imdecode(np.fromfile(fileList[0], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+            tempImage = cv2.imdecode(np.fromfile(fileList[i], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
             dxSum = dxSum + offsetList[i][0]
             dySum = dySum + offsetList[i][1]
             # self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
