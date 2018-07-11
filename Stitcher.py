@@ -8,7 +8,6 @@ import skimage.measure
 from numba import jit
 import ImageUtility as Utility
 import ImageFusion
-from phasecorrelation import *
 import time
 
 class ImageFeature():
@@ -27,7 +26,6 @@ class Stitcher(Utility.Method):
     directIncre = 1
     fuseMethod = "notFuse"
     phaseResponseThreshold = 0.15
-    phase = phaseCorrelation()
     tempImageFeature = ImageFeature()
 
     def directionIncrease(self, direction):
