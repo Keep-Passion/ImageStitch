@@ -49,8 +49,10 @@ class Stitcher(Utility.Method):
         endfileIndex = 0
         for fileIndex in range(0, fileNum - 1):
             self.printAndWrite("stitching " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex + 1]))
-            imageA = cv2.imread(fileList[fileIndex], 0)
-            imageB = cv2.imread(fileList[fileIndex + 1], 0)
+            # imageA = cv2.imread(fileList[fileIndex], 0)
+            # imageB = cv2.imread(fileList[fileIndex + 1], 0)
+            imageA = cv2.imdecode(np.fromfile(fileList[fileIndex], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+            imageB = cv2.imdecode(np.fromfile(fileList[fileIndex + 1], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
             if caculateOffsetMethod == self.calculateOffsetForPhaseCorrleate:
                 (status, offset) = self.calculateOffsetForPhaseCorrleate([fileList[fileIndex], fileList[fileIndex + 1]])
             else:
@@ -95,7 +97,8 @@ class Stitcher(Utility.Method):
             if startNum == totalNum:
                 break
             if startNum == (totalNum - 1):
-                result.append(cv2.imread(fileList[startNum], 0))
+                # result.append(cv2.imread(fileList[startNum], 0))
+                result.append(cv2.imdecode(np.fromfile(fileList[startNum], dtype=np.uint8), cv2.IMREAD_GRAYSCALE))
                 break
             self.printAndWrite("stitching Break, start from " + str(fileList[startNum]) + " again")
         return result
@@ -329,7 +332,8 @@ class Stitcher(Utility.Method):
         # 已优化到根据指针来控制拼接，CPU下最快了
         dxSum = dySum = 0
         imageList = []
-        imageList.append(cv2.imread(fileList[0], 0))
+        # imageList.append(cv2.imread(fileList[0], 0))
+        imageList.append(cv2.imdecode(np.fromfile(fileList[0], dtype=np.uint8), cv2.IMREAD_GRAYSCALE))
         resultRow = imageList[0].shape[0]         # 拼接最终结果的横轴长度,先赋值第一个图像的横轴
         resultCol = imageList[0].shape[1]         # 拼接最终结果的纵轴长度,先赋值第一个图像的纵轴
         offsetListOrigin.insert(0, [0, 0])        # 增加第一张图像相对于最终结果的原点的偏移量
@@ -343,7 +347,8 @@ class Stitcher(Utility.Method):
         for i in range(1, len(offsetList)):
             # self.printAndWrite("  stitching " + str(fileList[i]))
             # 适用于流形拼接的校正,并更新最终图像大小
-            tempImage = cv2.imread(fileList[i], 0)
+            # tempImage = cv2.imread(fileList[i], 0)
+            tempImage = cv2.imdecode(np.fromfile(fileList[i], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
             dxSum = dxSum + offsetList[i][0]
             dySum = dySum + offsetList[i][1]
             # self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
