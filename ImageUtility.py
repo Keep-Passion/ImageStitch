@@ -28,7 +28,7 @@ class Method():
     surfIsUpright = False
 
     # 关于 GPU-ORB 的设置
-    orbNfeatures = 500
+    orbNfeatures = 5000
     orbScaleFactor = 1.2
     orbNlevels = 8
     orbEdgeThreshold = 31
@@ -36,7 +36,7 @@ class Method():
     orbWTA_K = 2
     orbPatchSize = 31
     orbFastThreshold = 20
-    orbBlurForDescriptor = True
+    orbBlurForDescriptor = False
     orbMaxDistance = 30
 
     # 关于特征配准的设置
