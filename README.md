@@ -8,7 +8,9 @@ To run this algorithm, you need to install the python packages as follows:
     opencv-contrib(we have tested oepncv3.3.1)
 
 ## Examples
-There are some examples of VFSMS are shown behind.Six types’ local and global micrographs and their shooting path. The red translucent region represent one shot from microscope. The red dotted line refer to shooting path. (a) Iron crystal in scanning electron microscopy (SEM) with its detail imaging. (b) Pairwise shooting path of (a) with 2 local images. (c) Dendritic crystal in SEM with its detail imaging. (d) Grid shooting path of (c) with 90 local images. (e) Zircon in SEM with its detail imaging. (f) Zircon in transmission electron microscope (TEM) with its detail imaging. (g) Zircon in black scattered electron imaging (BSE) with its detail imaging. (h) Zircon in cathodoluminescence spectroscopy (CL) with its detail imaging. (i) Shooting path for (e)(f)(g)(h), the numbers of local images depends on the length of sample.
+There are some examples of VFSMS are shown behind.
+
+Six types’ local and global micrographs and their shooting path. The red translucent region represent one shot from microscope. The red dotted line refer to shooting path. (a) Iron crystal in scanning electron microscopy (SEM) with its detail imaging. (b) Pairwise shooting path of (a) with 2 local images. (c) Dendritic crystal in SEM with its detail imaging. (d) Grid shooting path of (c) with 90 local images. (e) Zircon in SEM with its detail imaging. (f) Zircon in transmission electron microscope (TEM) with its detail imaging. (g) Zircon in black scattered electron imaging (BSE) with its detail imaging. (h) Zircon in cathodoluminescence spectroscopy (CL) with its detail imaging. (i) Shooting path for (e)(f)(g)(h), the numbers of local images depends on the length of sample.
 <p align = "center">
 <img src="https://github.com/MATony/ImageStitch/blob/master/demoImages/examplesOfImageStitch.png">
 </p>
@@ -16,5 +18,7 @@ There are some examples of VFSMS are shown behind.Six types’ local and global 
 
 ## Citation
 This is an implementation of VFSMS algorithm in Python 3.
+
 If you use it successfully for your research please be so kind to cite our work:
+
 Ma B, Ban X, Hai H, Su Y, Wan B. VFSMS:Very fast sequential micrograph stitching, Still in Submission...
