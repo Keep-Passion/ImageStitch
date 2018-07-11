@@ -17,8 +17,6 @@ Six types’ local and global micrographs and their shooting path. The red trans
 
 
 ## Citation
-This is an implementation of VFSMS algorithm in Python 3.
-
 If you use it successfully for your research please be so kind to cite our work:
 
 Ma B, Ban X, Hai H, Su Y, Wan B. VFSMS:Very fast sequential micrograph stitching, Still in Submission...
