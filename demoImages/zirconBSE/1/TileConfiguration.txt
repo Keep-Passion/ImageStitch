@@ -1,8 +1,0 @@
-# Define the number of dimensions we are working on
-dim = 2
-
-# Define the image coordinates
-LF0117-16-17-LYV-361-16-17-LYV-361-04.jpg; ; (0.0, 0.0)
-LF0117-16-17-LYV-361-16-17-LYV-361-03.jpg; ; (1024.0, 0.0)
-LF0117-16-17-LYV-361-16-17-LYV-361-02.jpg; ; (2048.0, 0.0)
-LF0117-16-17-LYV-361-16-17-LYV-361-01.jpg; ; (3072.0, 0.0)
