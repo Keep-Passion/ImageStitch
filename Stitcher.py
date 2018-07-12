@@ -43,8 +43,8 @@ class Stitcher(Utility.Method):
         return direction
 
     def videoStitch(self, filleAddress, caculateOffsetMethod, isVideo = True):
+        # 如果是video的话，就先将视频按照帧率提取成png, 暂存到tempAddress目录下
         if isVideo == True:
-            # 如果是video的话，就先将视频按照帧率提取成png, 暂存到tempAddress目录下
             isfolderExist = os.path.exists(self.tempAddress)
             if isfolderExist:
                 self.deleteFilesInFolder(self.tempAddress)
@@ -71,8 +71,32 @@ class Stitcher(Utility.Method):
 
         # 开始拼接文件夹下的图片
         fileList = glob.glob(filleAddress + "\\*.png")
-        (status, stitchImage) = self.flowStitch(fileList, caculateOffsetMethod)
+        fileNum = len(fileList)
+        offsetList = []
+        isFrameAvailable = []
+        describtion = ""
+        startTime = time.time()
+        for fileIndex in range(0, len(fileList) - 1):
+            imageA = cv2.imdecode(np.fromfile(fileList[fileIndex], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+            imageB = cv2.imdecode(np.fromfile(fileList[fileIndex + 1], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+            (status, offset) = caculateOffsetMethod([imageA, imageB])
+            if status == False:
+                print("  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched")
+                fileNum = fileNum - 1
+                continue
+            else:
+                offsetList.append(offset)
+        endTime = time.time()
 
+        self.printAndWrite("The time of registering is " + str(endTime - startTime) + "s")
+
+        # stitching and fusing
+        self.printAndWrite("start stitching")
+        startTime = time.time()
+        stitchImage = self.getStitchByOffset(fileList, offsetList)
+        endTime = time.time()
+        self.printAndWrite("The time of fusing is " + str(endTime - startTime) + "s")
+        return stitchImage
 
     def flowStitch(self, fileList, caculateOffsetMethod):
         self.printAndWrite("Stitching the directory which have " + str(fileList[0]))
