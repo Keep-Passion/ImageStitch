@@ -1,6 +1,7 @@
 *.[jpg]
 *.[txt]
 .idea/
+videos/
 images/
 result/
 __pycache__/

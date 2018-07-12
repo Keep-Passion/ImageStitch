@@ -30,6 +30,10 @@ class Stitcher(Utility.Method):
     phase = phaseCorrelation()
     tempImageFeature = ImageFeature()
 
+    # microcopic video stitch
+    samplingRate = 3                # 每隔几帧取一张
+    tempAddress = "videos\\temp"    # 临时文件夹
+
     def directionIncrease(self, direction):
         direction += self.directIncre
         if direction == 5:
@@ -37,6 +41,38 @@ class Stitcher(Utility.Method):
         if direction == 0:
             direction = 4
         return direction
+
+    def videoStitch(self, filleAddress, caculateOffsetMethod, isVideo = True):
+        if isVideo == True:
+            # 如果是video的话，就先将视频按照帧率提取成png, 暂存到tempAddress目录下
+            isfolderExist = os.path.exists(self.tempAddress)
+            if isfolderExist:
+                self.deleteFilesInFolder(self.tempAddress)
+            else:
+                os.makedirs(self.tempAddress)
+            cap = cv2.VideoCapture(filleAddress)
+            frameNum = 0
+            saveNum = 0
+            self.printAndWrite("Video name:" + filleAddress)
+            self.printAndWrite("Sampling rare:" + self.samplingRate)
+            self.printAndWrite("Sampling images ...")
+            while (True):
+                ret, frame = cap.read()
+                if ret == False:
+                    break
+                frameNum = frameNum + 1
+                if frameNum % self.samplingRate == 0:
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    saveNum = saveNum + 1
+                    cv2.imwrite(self.tempAddress + "\\" + str(saveNum).zfill(10) + ".png", gray)
+            cap.release()
+            self.printAndWrite("Sampled done, we save images in " + self.tempAddress)
+            filleAddress = self.tempAddress
+
+        # 开始拼接文件夹下的图片
+        fileList = glob.glob(filleAddress + "\\*.png")
+        (status, stitchImage) = self.flowStitch(fileList, caculateOffsetMethod)
+
 
     def flowStitch(self, fileList, caculateOffsetMethod):
         self.printAndWrite("Stitching the directory which have " + str(fileList[0]))
