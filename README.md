@@ -1,4 +1,4 @@
-# Micrograph oriented sequential micrograph stitching: VFSMS
+# A Fast Algorithm for Material Image Sequential Stitching
 In material researches, it is often highly desirable to observe images of whole microscopic sections with high resolution. So that micrograph stitching is an important technology to produce a panorama or larger image by combining multiple images with overlapping areas, while retaining microscopic resolution. However, due to high complexity and variety of microstructure, most traditional methods could not balance the speed and accuracy of stitching strategy. To overcome this problem, we develop a very fast sequential micrograph stitching method, called VFSMS, which employ incremental searching strategy and GPU acceleration to guarantee the accuracy and speed of the stitching results. Experimental results demonstrate that VFSMS achieve state-of-art performance on six types' microscopic datasets on both accuracy and speed aspects. Besides, it significantly outperform the most famous and commonly used software, such as ImageJ, Photoshop and Autostitch.
 
 ## Requirements
@@ -19,7 +19,7 @@ Six types’ local and global micrographs and their shooting path. The red trans
 ## Citation
 If you use it successfully for your research please be so kind to cite our work:
 
-Ma B, Ban X, Huang H, Ya S, Liu W, Wu D. Micrograph oriented sequential micrograph stitching: VFSMS, Still in Submission...
+Ma B, Ban X, Huang H, Ya S, Liu W, Wu D. A Fast Algorithm for Material Image Sequential Stitching, Still in Submission...
 
 ## Acknowledgements
 The authors acknowledge the financial support from the National Key Research and Development Program of China (No. 2016YFB0700500)
