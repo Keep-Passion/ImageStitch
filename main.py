@@ -25,7 +25,7 @@ def ironPariwiseStitch():
         if status == False:
             print("拼接失败")
 
-def dendriticCrystalGridStitch():
+def dendriticCrystalGridStitch(p1, p2, p3:
     # Image stitching For Al11La3 By grid stitching
     projectAddress = ".\\images\\dendriticCrystal"
     fileNum = 11
