@@ -12,7 +12,8 @@ def stitchWithFeature():
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-    Stitcher.fuseMethod = "fadeInAndFadeOut"
+    # Stitcher.fuseMethod = "fadeInAndFadeOut"
+    Stitcher.fuseMethod = "notFuse"
     stitcher = Stitcher()
     startTime = time.time()
 
@@ -43,7 +44,7 @@ def stitchWithFeature():
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 96, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=89, fileExtension="jpg", outputfileExtension="png")
 
-    method = "featureSearch"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    method = "featureSearchIncre"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
     projectAddress = "images\\zirconLargeResized_4_INTER_AREA"
     outputAddress = "result\\" + method + "\\zirconLargeResized_4_INTER_AREA" + str.capitalize(Stitcher.fuseMethod) + "\\"
     stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 97, stitcher.calculateOffsetForFeatureSearch,
@@ -75,7 +76,8 @@ def paperExperiments():
     Stitcher.offsetCaculate = "mode"    # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3         # 40 menas nums of matches for mode, 4.0 menas  of matches for ransac
     Stitcher.roiRatio = 0.2             # roi length for stitching in first direction
-    Stitcher.fuseMethod = "fadeInAndFadeOut"
+    # Stitcher.fuseMethod = "notFuse"
+    Stitcher.fuseMethod = "trigonometric"
     stitcher = Stitcher()
 
     # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 0;
@@ -87,72 +89,69 @@ def paperExperiments():
     # method = "featureSearchIncre";Stitcher.direction = 4; Stitcher.directIncre = 0;
     # projectAddress = "images\\paperExperiments\\zirconBSE"
     # outputAddress = "result\\paperExperiments\\zirconBSE\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearch,
-    #                                    startNum=1, fileExtension="jpg", outputfileExtension="jpg")
-    #
-    method = "featureSearchIncre";Stitcher.direction = 4;  Stitcher.directIncre = 0;
-    projectAddress = "images\\paperExperiments\\zirconCL"
-    outputAddress = "result\\paperExperiments\\zirconCL\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearch,
-                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
-
-    method = "featureSearchIncre";Stitcher.direction = 4; Stitcher.directIncre = 0;
-    projectAddress = "images\\paperExperiments\\zirconREM"
-    outputAddress = "result\\paperExperiments\\zirconREM\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearch,
-                                       startNum=1, fileExtension="jpg", outputfileExtension="jpg")
-
-    method = "featureSearchIncre";Stitcher.direction = 4;  Stitcher.directIncre = 0;
-    projectAddress = "images\\paperExperiments\\zirconTEM"
-    outputAddress = "result\\paperExperiments\\zirconTEM\\"
-    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearch,
-                            startNum=1, fileExtension="jpg", outputfileExtension="jpg")
-
-    # method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
-    # projectAddress = "images\\paperExperiments\\dendriticCrystal"
-    # outputAddress = "result\\paperExperiments\\dendriticCrystal\\"
     # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearchIncre,
-    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
-
-
-
-    # Stitcher.featureMethod = "surf"; Stitcher.searchRatio = 0.95; Stitcher.offsetEvaluate = 3;
-    # method = "featureSearchIncre";  Stitcher.direction = 1;  Stitcher.directIncre = 1;
-    # Stitcher.isEnhance = True;  # Stitcher.isClahe = True;
-    # Stitcher.fuseMethod = "notFuse"
-    # projectAddress = "images\\superalloyTurbineblade"
-    # outputAddress = "result\\" + method + "\\superalloyTurbineblade" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearchIncre,
-    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
-
-    # method = "featureSearchIncre"; Stitcher.direction = 4;  Stitcher.directIncre = 0;
-    # projectAddress = "images\\zirconLarge"
-    # outputAddress = "result\\" + method + "\\zirconLarge" + str.capitalize(Stitcher.fuseMethod) + "\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 96, stitcher.calculateOffsetForFeatureSearchIncre,
-    #                         startNum=89, fileExtension="jpg", outputfileExtension="png")
-
-    # method = "featureSearchIncre";Stitcher.direction = 4; Stitcher.directIncre = 0;
-    # projectAddress = "images\\paperExperiments\\zirconBSE"
-    # outputAddress = "result\\paperExperiments\\zirconBSE\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearch,
     #                                    startNum=1, fileExtension="jpg", outputfileExtension="jpg")
-    #
+
     # method = "featureSearchIncre";Stitcher.direction = 4;  Stitcher.directIncre = 0;
     # projectAddress = "images\\paperExperiments\\zirconCL"
     # outputAddress = "result\\paperExperiments\\zirconCL\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearch,
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearchIncre,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
     #
     # method = "featureSearchIncre";Stitcher.direction = 4; Stitcher.directIncre = 0;
     # projectAddress = "images\\paperExperiments\\zirconREM"
     # outputAddress = "result\\paperExperiments\\zirconREM\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearch,
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearchIncre,
     #                                    startNum=1, fileExtension="jpg", outputfileExtension="jpg")
     #
     # method = "featureSearchIncre";Stitcher.direction = 4;  Stitcher.directIncre = 0;
     # projectAddress = "images\\paperExperiments\\zirconTEM"
     # outputAddress = "result\\paperExperiments\\zirconTEM\\"
-    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearch,
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearchIncre,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    #
+    method = "featureSearchIncre"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
+    projectAddress = "images\\paperExperiments\\dendriticCrystal"
+    outputAddress = "result\\paperExperiments\\dendriticCrystal\\"
+    stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearchIncre,
+                            startNum=7, fileExtension="jpg", outputfileExtension="jpg")
+
+
+    # # Search
+    # method = "featureSearch";  Stitcher.direction = 1;  Stitcher.directIncre = 0;
+    # projectAddress = "images\\paperExperiments\\iron"
+    # outputAddress = "result\\paperExperiments\\iron\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearch,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    #
+    # method = "featureSearch";Stitcher.direction = 4; Stitcher.directIncre = 0;
+    # projectAddress = "images\\paperExperiments\\zirconBSE"
+    # outputAddress = "result\\paperExperiments\\zirconBSE\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearch,
+    #                                    startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    #
+    # method = "featureSearch";Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    # projectAddress = "images\\paperExperiments\\zirconCL"
+    # outputAddress = "result\\paperExperiments\\zirconCL\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearch,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+
+    # method = "featureSearchIncre";Stitcher.direction = 4; Stitcher.directIncre = 0;
+    # projectAddress = "images\\paperExperiments\\zirconREM"
+    # outputAddress = "result\\paperExperiments\\zirconREM\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearchIncre,
+    #                                    startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+    #
+    # method = "featureSearch";Stitcher.direction = 4;  Stitcher.directIncre = 0;
+    # projectAddress = "images\\paperExperiments\\zirconTEM"
+    # outputAddress = "result\\paperExperiments\\zirconTEM\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 10, stitcher.calculateOffsetForFeatureSearchIncre,
+    #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+
+    # method = "featureSearch"; Stitcher.direction = 1;  Stitcher.directIncre = 1;
+    # projectAddress = "images\\paperExperiments\\dendriticCrystal"
+    # outputAddress = "result\\paperExperiments\\dendriticCrystal\\"
+    # stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearch,
     #                         startNum=1, fileExtension="jpg", outputfileExtension="jpg")
 
 

@@ -30,6 +30,10 @@ class Stitcher(Utility.Method):
     phase = phaseCorrelation()
     tempImageFeature = ImageFeature()
 
+    # microcopic video stitch
+    samplingRate = 3                # 每隔几帧取一张
+    tempAddress = "videos\\temp"    # 临时文件夹
+
     def directionIncrease(self, direction):
         direction += self.directIncre
         if direction == 5:
@@ -37,6 +41,62 @@ class Stitcher(Utility.Method):
         if direction == 0:
             direction = 4
         return direction
+
+    def videoStitch(self, filleAddress, caculateOffsetMethod, isVideo = True):
+        # 如果是video的话，就先将视频按照帧率提取成png, 暂存到tempAddress目录下
+        if isVideo == True:
+            isfolderExist = os.path.exists(self.tempAddress)
+            if isfolderExist:
+                self.deleteFilesInFolder(self.tempAddress)
+            else:
+                os.makedirs(self.tempAddress)
+            cap = cv2.VideoCapture(filleAddress)
+            frameNum = 0
+            saveNum = 0
+            self.printAndWrite("Video name:" + filleAddress)
+            self.printAndWrite("Sampling rare:" + self.samplingRate)
+            self.printAndWrite("Sampling images ...")
+            while (True):
+                ret, frame = cap.read()
+                if ret == False:
+                    break
+                frameNum = frameNum + 1
+                if frameNum % self.samplingRate == 0:
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    saveNum = saveNum + 1
+                    cv2.imwrite(self.tempAddress + "\\" + str(saveNum).zfill(10) + ".png", gray)
+            cap.release()
+            self.printAndWrite("Sampled done, we save images in " + self.tempAddress)
+            filleAddress = self.tempAddress
+
+        # 开始拼接文件夹下的图片
+        fileList = glob.glob(filleAddress + "\\*.png")
+        fileNum = len(fileList)
+        offsetList = []
+        isFrameAvailable = []
+        describtion = ""
+        startTime = time.time()
+        for fileIndex in range(0, len(fileList) - 1):
+            imageA = cv2.imdecode(np.fromfile(fileList[fileIndex], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+            imageB = cv2.imdecode(np.fromfile(fileList[fileIndex + 1], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+            (status, offset) = caculateOffsetMethod([imageA, imageB])
+            if status == False:
+                print("  " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex+1]) + " can not be stitched")
+                fileNum = fileNum - 1
+                continue
+            else:
+                offsetList.append(offset)
+        endTime = time.time()
+
+        self.printAndWrite("The time of registering is " + str(endTime - startTime) + "s")
+
+        # stitching and fusing
+        self.printAndWrite("start stitching")
+        startTime = time.time()
+        stitchImage = self.getStitchByOffset(fileList, offsetList)
+        endTime = time.time()
+        self.printAndWrite("The time of fusing is " + str(endTime - startTime) + "s")
+        return stitchImage
 
     def flowStitch(self, fileList, caculateOffsetMethod):
         self.printAndWrite("Stitching the directory which have " + str(fileList[0]))
@@ -49,8 +109,10 @@ class Stitcher(Utility.Method):
         endfileIndex = 0
         for fileIndex in range(0, fileNum - 1):
             self.printAndWrite("stitching " + str(fileList[fileIndex]) + " and " + str(fileList[fileIndex + 1]))
-            imageA = cv2.imread(fileList[fileIndex], 0)
-            imageB = cv2.imread(fileList[fileIndex + 1], 0)
+            # imageA = cv2.imread(fileList[fileIndex], 0)
+            # imageB = cv2.imread(fileList[fileIndex + 1], 0)
+            imageA = cv2.imdecode(np.fromfile(fileList[fileIndex], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+            imageB = cv2.imdecode(np.fromfile(fileList[fileIndex + 1], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
             if caculateOffsetMethod == self.calculateOffsetForPhaseCorrleate:
                 (status, offset) = self.calculateOffsetForPhaseCorrleate([fileList[fileIndex], fileList[fileIndex + 1]])
             else:
@@ -95,7 +157,8 @@ class Stitcher(Utility.Method):
             if startNum == totalNum:
                 break
             if startNum == (totalNum - 1):
-                result.append(cv2.imread(fileList[startNum], 0))
+                # result.append(cv2.imread(fileList[startNum], 0))
+                result.append(cv2.imdecode(np.fromfile(fileList[startNum], dtype=np.uint8), cv2.IMREAD_GRAYSCALE))
                 break
             self.printAndWrite("stitching Break, start from " + str(fileList[startNum]) + " again")
         return result
@@ -329,7 +392,8 @@ class Stitcher(Utility.Method):
         # 已优化到根据指针来控制拼接，CPU下最快了
         dxSum = dySum = 0
         imageList = []
-        imageList.append(cv2.imread(fileList[0], 0))
+        # imageList.append(cv2.imread(fileList[0], 0))
+        imageList.append(cv2.imdecode(np.fromfile(fileList[0], dtype=np.uint8), cv2.IMREAD_GRAYSCALE))
         resultRow = imageList[0].shape[0]         # 拼接最终结果的横轴长度,先赋值第一个图像的横轴
         resultCol = imageList[0].shape[1]         # 拼接最终结果的纵轴长度,先赋值第一个图像的纵轴
         offsetListOrigin.insert(0, [0, 0])        # 增加第一张图像相对于最终结果的原点的偏移量
@@ -343,7 +407,8 @@ class Stitcher(Utility.Method):
         for i in range(1, len(offsetList)):
             # self.printAndWrite("  stitching " + str(fileList[i]))
             # 适用于流形拼接的校正,并更新最终图像大小
-            tempImage = cv2.imread(fileList[i], 0)
+            # tempImage = cv2.imread(fileList[i], 0)
+            tempImage = cv2.imdecode(np.fromfile(fileList[i], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
             dxSum = dxSum + offsetList[i][0]
             dySum = dySum + offsetList[i][1]
             # self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))

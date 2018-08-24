@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import math
 import myGpuFeatures
+import os
 from scipy.stats import mode
 
 class Method():
@@ -28,7 +29,7 @@ class Method():
     surfIsUpright = False
 
     # 关于 GPU-ORB 的设置
-    orbNfeatures = 500
+    orbNfeatures = 5000
     orbScaleFactor = 1.2
     orbNlevels = 8
     orbEdgeThreshold = 31
@@ -36,7 +37,7 @@ class Method():
     orbWTA_K = 2
     orbPatchSize = 31
     orbFastThreshold = 20
-    orbBlurForDescriptor = True
+    orbBlurForDescriptor = False
     orbMaxDistance = 30
 
     # 关于特征配准的设置
@@ -58,6 +59,20 @@ class Method():
             f.write(content)
             f.write("\n")
             f.close()
+
+    def deleteFilesInFolder(folderAddress="videos\\temp\\"):
+        '''
+        删除一个文件夹下所有子文件（不包括子文件夹和子文件夹下的文件）
+        :param folderAddress: 文件夹目录
+        :return:
+        '''
+        fileList = os.listdir(folderAddress)
+        fileNum = len(fileList)
+        if fileNum != 0:
+            for i in range(fileNum):
+                path = os.path.join(folderAddress, fileList[i])
+                if os.path.isdir(path) == False:
+                    os.remove(path)
 
     def getROIRegionForIncreMethod(self, image, direction=1, order="first", searchRatio=0.1):
         row, col = image.shape[:2]

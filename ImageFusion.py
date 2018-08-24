@@ -186,10 +186,11 @@ class ImageFusion(Utility.Method):
             if col <= row:
                 # self.printAndWrite("普通融合-水平方向")
                 for i in range(0, col):
-                    if dy <= 0:
+                    # print(dy)
+                    if dy >= 0:
                         weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
                         weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * i * 1.0 / col
-                    elif dy > 0:
+                    elif dy < 0:
                         weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
                         weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
@@ -231,10 +232,10 @@ class ImageFusion(Utility.Method):
             if col <= row:
                 # self.printAndWrite("普通融合-水平方向")
                 for i in range(0, col):
-                    if dy <= 0:
+                    if dy >= 0:
                         weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
                         weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * i * 1.0 / col
-                    elif dy > 0:
+                    elif dy < 0:
                         weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
                         weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
