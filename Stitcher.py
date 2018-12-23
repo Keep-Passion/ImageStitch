@@ -11,7 +11,7 @@ import ImageFusion
 import time
 
 class ImageFeature():
-    # 用来保存串行全局拼接中的第二张图像的特征点和描述子，为后续加速拼接使用
+    # 用来保存串行全局拼接中的第二张图像的特征点和描述子，为后续加速拼接使用，避免重复计算
     isBreak = True      # 判断是否上一次中断
     kps = None
     feature = None
@@ -23,12 +23,17 @@ class Stitcher(Utility.Method):
 	'''
     direction = 1               # 1： 第一张图像在上，第二张图像在下；   2： 第一张图像在左，第二张图像在右；
                                 # 3： 第一张图像在下，第二张图像在上；   4： 第一张图像在右，第二张图像在左；
-    directIncre = 1
+    directIncre = 1             # 拼接增长方向，可以为1. 0， -1
     fuseMethod = "notFuse"
     phaseResponseThreshold = 0.15
     tempImageFeature = ImageFeature()
 
     def directionIncrease(self, direction):
+        """
+        功能：改变拼接搜索方向，通过direction和directIncre控制，使得范围保持在[1,4]
+        :param direction: 当前的方向
+        :return: 返回更新后的方向
+        """
         direction += self.directIncre
         if direction == 5:
             direction = 1
@@ -37,6 +42,12 @@ class Stitcher(Utility.Method):
         return direction
 
     def flowStitch(self, fileList, caculateOffsetMethod):
+        """
+        功能：序列拼接，从list的第一张拼接到最后一张，由于中间可能出现拼接失败，故记录截止文件索引
+        :param fileList: 图像地址序列
+        :param caculateOffsetMethod:计算偏移量方法
+        :return: ((status, endfileIndex), stitchImage),（（拼接状态， 截止文件索引）， 拼接结果）
+        """
         self.printAndWrite("Stitching the directory which have " + str(fileList[0]))
         fileNum = len(fileList)
         offsetList = []
@@ -78,6 +89,12 @@ class Stitcher(Utility.Method):
         return ((status, endfileIndex), stitchImage)
 
     def flowStitchWithMutiple(self, fileList, caculateOffsetMethod):
+        """
+        功能：多段序列拼接，从list的第一张拼接到最后一张，由于中间可能出现拼接失败，将分段拼接结果共同返回
+        :param fileList: 图像地址序列
+        :param caculateOffsetMethod:计算偏移量方法
+        :return: 拼接的图像list
+        """
         result = []
         totalNum = len(fileList)
         startNum = 0
@@ -102,6 +119,17 @@ class Stitcher(Utility.Method):
         return result
 
     def imageSetStitch(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
+        """
+        功能：图像集拼接方法
+        :param projectAddress: 项目地址
+        :param outputAddress: 输出地址
+        :param fileNum: 共多少个文件
+        :param caculateOffsetMethod: 计算偏移量方法
+        :param startNum: 从第几个文件开始拼
+        :param fileExtension: 输入文件扩展名
+        :param outputfileExtension:输出文件扩展名
+        :return:
+        """
         for i in range(startNum, fileNum+1):
             fileAddress = projectAddress + "\\" + str(i) + "\\"
             fileList = glob.glob(fileAddress + "*." + fileExtension)
@@ -115,6 +143,17 @@ class Stitcher(Utility.Method):
                 self.printAndWrite("stitching Failed")
 
     def imageSetStitchWithMutiple(self, projectAddress, outputAddress, fileNum, caculateOffsetMethod, startNum = 1, fileExtension = "jpg", outputfileExtension = "jpg"):
+        """
+        功能：图像集多段拼接方法
+        :param projectAddress: 项目地址
+        :param outputAddress: 输出地址
+        :param fileNum: 共多少个文件
+        :param caculateOffsetMethod: 计算偏移量方法
+        :param startNum: 从第几个文件开始拼
+        :param fileExtension: 输入文件扩展名
+        :param outputfileExtension:输出文件扩展名
+        :return:
+        """
         for i in range(startNum, fileNum+1):
             startTime = time.time()
             fileAddress = projectAddress + "\\" + str(i) + "\\"
@@ -135,6 +174,11 @@ class Stitcher(Utility.Method):
             print("Time Consuming for " + fileAddress + " is " + str(endTime - startTime))
 
     def calculateOffsetForPhaseCorrleate(self, dirAddress):
+        """
+        功能：采用相位相关法计算偏移量（不完善）
+        :param dirAddress:
+        :return:
+        """
         (dir1, dir2) = dirAddress
         offset = [0, 0]
         status = True
@@ -152,7 +196,7 @@ class Stitcher(Utility.Method):
 
     def calculateOffsetForPhaseCorrleateIncre(self, images):
         '''
-        Stitch two images
+        功能：采用相位相关法计算偏移量-考虑增长搜索区域（不完善）
         :param images: [imageA, imageB]
         :param registrateMethod: list:
         :param fuseMethod:
@@ -207,12 +251,9 @@ class Stitcher(Utility.Method):
 
     def calculateOffsetForFeatureSearch(self, images):
         '''
-        Stitch two images
+        功能：采用特征搜索计算偏移量
         :param images: [imageA, imageB]
-        :param registrateMethod: list:
-        :param fuseMethod:
-        :param direction: stitching direction
-        :return:
+        :return:(status, offset)
         '''
         (imageA, imageB) = images
         offset = [0, 0]
@@ -256,12 +297,9 @@ class Stitcher(Utility.Method):
 
     def calculateOffsetForFeatureSearchIncre(self, images):
         '''
-        Stitch two images
+        功能：采用特征搜索计算偏移量-考虑增长搜索区域
         :param images: [imageA, imageB]
-        :param registrateMethod: list:
-        :param fuseMethod:
-        :param direction: stitching direction
-        :return:
+        :return:(status, offset)
         '''
 
         (imageA, imageB) = images
@@ -321,10 +359,10 @@ class Stitcher(Utility.Method):
 
     def getStitchByOffset(self, fileList, offsetListOrigin):
         '''
-        通过偏移量列表和文件列表得到最终的拼接结果
+        功能：通过偏移量列表和文件列表得到最终的拼接结果
         :param fileList: 图像列表
         :param offsetListOrigin: 偏移量列表
-        :return: ndaarry，图像
+        :return: ndarry，图像
         '''
         # 如果你不细心，不要碰这段代码
         # 已优化到根据指针来控制拼接，CPU下最快了
@@ -413,6 +451,13 @@ class Stitcher(Utility.Method):
         return stitchResult.astype(np.uint8)
 
     def fuseImage(self, images, dx, dy):
+        """
+        功能：融合图像
+        :param images: [imageA, imageB]
+        :param dx: x方向偏移量
+        :param dy: y方向偏移量
+        :return:
+        """
         (imageA, imageB) = images
         # cv2.namedWindow("A", 0)
         # cv2.namedWindow("B", 0)

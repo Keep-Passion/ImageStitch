@@ -5,10 +5,10 @@ import ImageUtility as Utility
 
 
 class ImageFusion(Utility.Method):
-
+    # 图像融合类，目前只编写传统方法
     def fuseByAverage(self, images):
         '''
-        均值融合
+        功能：均值融合
         :param images: 输入两个相同区域的图像
         :return:融合后的图像
         '''
@@ -19,7 +19,7 @@ class ImageFusion(Utility.Method):
 
     def fuseByMaximum(self, images):
         '''
-        最大值融合
+        功能：最大值融合
         :param images: 输入两个相同区域的图像
         :return:融合后的图像
         '''
@@ -29,7 +29,7 @@ class ImageFusion(Utility.Method):
 
     def fuseByMinimum(self, images):
         '''
-        最小值融合
+        功能：最小值融合
         :param images: 输入两个相同区域的图像
         :return:融合后的图像
         '''
@@ -39,8 +39,8 @@ class ImageFusion(Utility.Method):
     
     def getWeightsMatrix(self, images):
         '''
-        获取权值矩阵
-        :param images: 带融合两幅图像
+        功能：获取权值矩阵
+        :param images:  输入两个相同区域的图像
         :return: weigthA,weightB
         '''
         (imageA, imageB) = images
@@ -170,7 +170,7 @@ class ImageFusion(Utility.Method):
 
     def fuseByFadeInAndFadeOut(self, images, dx, dy):
         '''
-        渐入渐出融合
+        功能：渐入渐出融合
         :param images:输入两个相同区域的图像
         :param direction: 横向拼接还是纵向拼接
         :return:融合后的图像
@@ -215,7 +215,7 @@ class ImageFusion(Utility.Method):
 
     def fuseByTrigonometric(self, images, dx, dy):
         '''
-        三角函数融合
+        功能：三角函数融合
         引用自《一种三角函数权重的图像拼接算法》知网
         :param images:输入两个相同区域的图像
         :param direction: 横向拼接还是纵向拼接
@@ -262,13 +262,26 @@ class ImageFusion(Utility.Method):
         fuseRegion = np.uint8(result)
         return fuseRegion
 
+    # 多样条融合方法
     def fuseByMultiBandBlending(self, images):
+        """
+        功能：多带样条融合
+        :param images:
+        :return:
+        """
         (imageA, imageB) = images
         imagesReturn = np.uint8(self.BlendArbitrary2(imageA, imageB, 4))
         return imagesReturn
 
-    #带权拉普拉斯金字塔融合
     def BlendArbitrary(self, img1, img2, R, level):
+        """
+        功能：带权拉普拉斯融合
+        :param img1: 第一张图像
+        :param img2: 第二张图像
+        :param R:
+        :param level: 金字塔权重
+        :return:
+        """
         # img1 and img2 have the same size
         # R represents the region to be combined
         # level is the expected number of levels in the pyramid
@@ -285,7 +298,6 @@ class ImageFusion(Utility.Method):
         result = self.reconstruct(LC)
         return  result
 
-    #均值融合
     def BlendArbitrary2(self, img1, img2, level):
         # img1 and img2 have the same size
         # R represents the region to be combined
@@ -331,7 +343,7 @@ class ImageFusion(Utility.Method):
         out = (Region - minI) / (maxI - minI) * 255
         return out
 
-    # OptialSeamLine's method
+    # OptialSeamLine's method 最佳缝合线方法
     def fuseByOptimalSeamLine(self, images, direction="horizontal"):
         '''
         基于最佳缝合线的融合方法
@@ -386,6 +398,12 @@ class ImageFusion(Utility.Method):
         return value
 
     def findOptimalSeamLine(self, value, direction="horizontal"):
+        """
+        功能：寻找最佳缝合线
+        :param value:
+        :param direction:
+        :return:
+        """
         if direction == "vertical":
             value = np.transpose(value)
         row, col = value.shape[:2]
@@ -427,6 +445,12 @@ class ImageFusion(Utility.Method):
         return mask
 
     def drawOptimalLine(self, mask, fuseRegion):
+        """
+        功能：绘制最佳缝合线
+        :param mask:
+        :param fuseRegion:
+        :return:
+        """
         row, col = mask.shape[:2]
         drawing = np.zeros([row, col, 3], dtype=np.uint8)
         drawing = cv2.cvtColor(fuseRegion, cv2.COLOR_GRAY2BGR)

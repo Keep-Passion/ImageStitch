@@ -7,9 +7,9 @@ from scipy.stats import mode
 class Method():
     # 关于打印信息的设置
     outputAddress = "result/"
-    isEvaluate = False
+    isEvaluate = False          # 是否输出到检验txt文件
     evaluateFile = "evaluate.txt"
-    isPrintLog = True
+    isPrintLog = True           # 是否在屏幕打印过程信息
 
     # 关于特征搜索的设置
     featureMethod = "surf"      # "sift","surf" or "orb"
@@ -17,7 +17,7 @@ class Method():
     searchRatio = 0.75          # 0.75 is common value for matches
 
     # 关于 GPU 加速的设置
-    isGPUAvailable = True
+    isGPUAvailable = True       # 判断GPU目前是否可用
 
     # 关于 GPU-SURF 的设置
     surfHessianThreshold = 100.0
@@ -49,17 +49,29 @@ class Method():
     clipLimit = 20
     tileSize = 5
 
-    # 向屏幕和文件打印输出内容
     def printAndWrite(self, content):
+        """
+        功能：向屏幕和文件打印输出内容
+        :param content: 打印内容
+        :return:
+        """
         if self.isPrintLog:
             print(content)
         if self.isEvaluate:
-            f = open(self.outputAddress + self.evaluateFile, "a")
+            f = open(self.outputAddress + self.evaluateFile, "a")   # 在文件末尾追加
             f.write(content)
             f.write("\n")
             f.close()
 
     def getROIRegionForIncreMethod(self, image, direction=1, order="first", searchRatio=0.1):
+        """
+        功能：对于搜索增长方法，根据比例获得其搜索区域
+        :param image: 原始图像
+        :param direction: 搜索方向
+        :param order: ‘first’or'second'判断属于第几张图像
+        :param searchRatio: 裁剪搜素区域的比例，默认搜索方向上的长度的0.1
+        :return: 搜索区域
+        """
         row, col = image.shape[:2]
         roiRegion = np.zeros(image.shape, np.uint8)
         if direction == 1:
@@ -89,7 +101,8 @@ class Method():
         return roiRegion
 
     def getROIRegion(self, image, direction="horizontal", order="first", searchLength=150, searchLengthForLarge=-1):
-        '''对原始图像裁剪感兴趣区域
+        '''
+        功能：对于搜索增长方法，根据固定长度获得其搜索区域（已弃用）
         :param originalImage:需要裁剪的原始图像
         :param direction:拼接的方向
         :param order:该图片的顺序，是属于第一还是第二张图像
@@ -121,8 +134,17 @@ class Method():
                     roiRegion = image[0: searchLength, :]
                 elif searchLengthForLarge > 0:
                     roiRegion = image[0: searchLength, 0:searchLengthForLarge]
+        return roiRegion
 
     def getOffsetByMode(self, kpsA, kpsB, matches, offsetEvaluate = 10):
+        """
+        功能：通过求众数的方法获得偏移量
+        :param kpsA: 第一张图像的特征
+        :param kpsB: 第二张图像的特征
+        :param matches: 配准列表
+        :param offsetEvaluate: 如果众数的个数大于本阈值，则配准正确，默认为10
+        :return: 返回(totalStatus, [dx, dy]), totalStatus 是否正确，[dx, dy]默认[0, 0]
+        """
         totalStatus = True
         if len(matches) == 0:
             totalStatus = False
@@ -156,6 +178,14 @@ class Method():
         return (totalStatus, [dx, dy])
 
     def getOffsetByRansac(self, kpsA, kpsB, matches, offsetEvaluate=100):
+        """
+        功能：通过求Ransac的方法获得偏移量（不完善）
+        :param kpsA: 第一张图像的特征
+        :param kpsB: 第二张图像的特征
+        :param matches: 配准列表
+        :param offsetEvaluate:对于Ransac求属于最小范围的个数，大于本阈值，则正确
+        :return:返回(totalStatus, [dx, dy]), totalStatus 是否正确，[dx, dy]默认[0, 0]
+        """
         totalStatus = False
         ptsA = np.float32([kpsA[i] for (_, i) in matches])
         ptsB = np.float32([kpsB[i] for (i, _) in matches])
@@ -181,7 +211,7 @@ class Method():
 
     def npToListForKeypoints(self, array):
         '''
-        Convert array to List, used for keypoints from GPUDLL to python List
+        功能：Convert array to List, used for keypoints from GPUDLL to python List
         :param array: array from GPUDLL
         :return:
         '''
@@ -193,7 +223,7 @@ class Method():
 
     def npToListForMatches(self, array):
         '''
-        Convert array to List, used for DMatches from GPUDLL to python List
+        功能：Convert array to List, used for DMatches from GPUDLL to python List
         :param array: array from GPUDLL
         :return:
         '''
@@ -204,6 +234,11 @@ class Method():
         return descritpors
 
     def npToKpsAndDescriptors(self, array):
+        """
+        功能:？
+        :param array:
+        :return:
+        """
         kps = []
         descriptors = array[:, :, 1]
         for i in range(array.shape[0]):
@@ -212,9 +247,9 @@ class Method():
 
     def detectAndDescribe(self, image, featureMethod):
         '''
-    	计算图像的特征点集合，并返回该点集＆描述特征
+    	功能：计算图像的特征点集合，并返回该点集＆描述特征
     	:param image:需要分析的图像
-    	:return:返回特征点集，及对应的描述特征
+    	:return:返回特征点集，及对应的描述特征(kps, features)
     	'''
         if self.isGPUAvailable == False: # CPU mode
             if featureMethod == "sift":
@@ -242,12 +277,10 @@ class Method():
 
     def matchDescriptors(self, featuresA, featuresB):
         '''
-        匹配特征点
-        :param self:
+        功能：匹配特征点
         :param featuresA: 第一张图像的特征点描述符
         :param featuresB: 第二张图像的特征点描述符
-        :param ratio: 最近邻和次近邻的比例
-        :return:返回匹配的对数
+        :return:返回匹配的对数matches
         '''
         if self.isGPUAvailable == False:        # CPU Mode
             # 建立暴力匹配器
@@ -276,6 +309,13 @@ class Method():
         return matches
 
     def resizeImg(self, image, resizeTimes, interMethod = cv2.INTER_AREA):
+        """
+        功能：缩放图像
+        :param image:原图像
+        :param resizeTimes:缩放比例
+        :param interMethod: 插值方法，默认cv2.INTER_AREA
+        :return:
+        """
         (h, w) = image.shape
         resizeH = int(h * resizeTimes)
         resizeW = int(w * resizeTimes)
@@ -283,7 +323,12 @@ class Method():
         return cv2.resize(image, (resizeW, resizeH), interpolation=interMethod)
 
     def rectifyFinalImg(self, image, regionLength = 10):
-
+        """
+        功能：测试用，尚不完善
+        :param image:
+        :param regionLength:
+        :return:
+        """
         (h, w) = image.shape
         print("h:" + str(h))
         print("w:" + str(w))
