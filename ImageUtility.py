@@ -41,7 +41,7 @@ class Method():
 
     # 关于特征配准的设置
     offsetCaculate = "mode"     # "mode" or "ransac"
-    offsetEvaluate = 3         # 40 menas nums of matches for mode, 3.0 menas  of matches for ransac
+    offsetEvaluate = 3           # 40 menas nums of matches for mode, 3.0 menas  of matches for ransac
 
     # 关于图像增强的操作
     isEnhance = False
