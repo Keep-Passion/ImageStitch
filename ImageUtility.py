@@ -338,9 +338,11 @@ class Method():
         return resultImage
 
 if __name__=="__main__":
+    # GPU Testing，测试Surf-GPU或Orb-GPU搜索，以及特征配准的并行情况
+    isGPUAvailable = True
     image = cv2.imread("D:\\Coding_Test\\Python\\ImageStitch\\images\\zirconSmall\\1\\WJE068-F (1).jpg", 0)
     method = Method()
-    kps, descriptors = method.detectAndDescribe(image, 'orb')
+    kps, descriptors = method.detectAndDescribe(image, 'surf')
     print(len(kps))
     print(descriptors.shape)
     print(kps[0])
