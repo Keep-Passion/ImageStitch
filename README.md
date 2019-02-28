@@ -19,7 +19,7 @@ Six types’ local and global micrographs and their shooting path. The red trans
 ## Citation
 If you use it successfully for your research please be so kind to cite our work:
 
-Ma B, Ban X, Huang H, Ya S, Liu W, Wu D. A Fast Algorithm for Material Image Sequential Stitching, Still in Submission...
+Ma B, Ban X, Huang H, et al. A fast algorithm for material image sequential stitching[J]. Computational Materials Science, 2019, 158: 1-13.
 
 ## Acknowledgements
 The authors acknowledge the financial support from the National Key Research and Development Program of China (No. 2016YFB0700500)
