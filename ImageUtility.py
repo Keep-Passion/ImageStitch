@@ -368,9 +368,11 @@ class Method():
         return resultImage
 
 if __name__=="__main__":
+    # GPU testing
     image = cv2.imread("D:\\Coding_Test\\Python\\ImageStitch\\images\\zirconSmall\\1\\WJE068-F (1).jpg", 0)
     method = Method()
-    kps, descriptors = method.detectAndDescribe(image, 'orb')
+    method.isGPUAvailable = True
+    kps, descriptors = method.detectAndDescribe(image, 'surf')
     print(len(kps))
     print(descriptors.shape)
     print(kps[0])
