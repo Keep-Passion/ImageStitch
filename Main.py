@@ -5,6 +5,7 @@ import glob
 import os
 import time
 
+
 def stitchWithFeature():
     Stitcher.featureMethod = "surf"             # "sift","surf" or "orb"
     Stitcher.isGPUAvailable = True
@@ -50,6 +51,7 @@ def stitchWithFeature():
     outputAddress = "result\\zirconTEM" + str.capitalize(Stitcher.fuseMethod) + "\\"
     stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearch,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
+
 
 if __name__=="__main__":
     stitchWithFeature()

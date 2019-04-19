@@ -343,7 +343,7 @@ class Method():
         zeroNum = h - noneZeroNum
         print("noneZeroNum:" + str(noneZeroNum))
         print("zeroNum:" + str(zeroNum))
-        print("除法:" + str(noneZeroNum / h))
+        print("division:" + str(noneZeroNum / h))
         if (noneZeroNum / h) < 0.3:
             resultImage = image
         elif upperLeft == 0 and bottomRight == 0 and upperRight != 0 and bottomLeft != 0:      # 左边低，右边高
@@ -366,14 +366,3 @@ class Method():
         else:
             resultImage = image
         return resultImage
-
-if __name__=="__main__":
-    # GPU testing
-    image = cv2.imread("D:\\Coding_Test\\Python\\ImageStitch\\images\\zirconSmall\\1\\WJE068-F (1).jpg", 0)
-    method = Method()
-    method.isGPUAvailable = True
-    kps, descriptors = method.detectAndDescribe(image, 'surf')
-    print(len(kps))
-    print(descriptors.shape)
-    print(kps[0])
-    print(descriptors[0, :])
