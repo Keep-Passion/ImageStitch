@@ -17,7 +17,7 @@ class Method():
     searchRatio = 0.75          # 0.75 is common value for matches
 
     # 关于 GPU 加速的设置
-    isGPUAvailable = True       # 判断GPU目前是否可用
+    isGPUAvailable = False       # 判断GPU目前是否可用
 
     # 关于 GPU-SURF 的设置
     surfHessianThreshold = 100.0

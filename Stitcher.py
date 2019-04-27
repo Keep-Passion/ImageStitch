@@ -334,13 +334,13 @@ class Stitcher(Utility.Method):
                         (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
                     elif self.offsetCaculate == "ransac":
                         (status, offset, adjustH) = self.getOffsetByRansac(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
-                if status == True:
+                if status:
                     break
                 else:
                     localDirection = self.directionIncrease(localDirection)
                 if localDirection == iniDirection:
                     break
-            if status == True:
+            if status:
                 if localDirection == 1:
                     offset[0] = offset[0] + imageA.shape[0] - int(i * self.roiRatio * imageA.shape[0])
                 elif localDirection == 2:
