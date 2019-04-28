@@ -5,3 +5,5 @@ result/
 .cache/
 __pycache__/
 .pyc
+myGpuFeatures/
+myGpuFeatures.zip

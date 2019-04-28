@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import math
-import myGpuFeatures
+from myGpuFeatures import myGpuFeatures
 from scipy.stats import mode
 
 class Method():
