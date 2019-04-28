@@ -7,6 +7,14 @@ To run this algorithm, you need to install the python packages as follows:
 
     opencv-contrib(we have tested oepncv3.3.1)
 
+## GPU Version in windows
+We rebuild the opencv-contrib 3.3.1 and cuda9.0 in our code and provide these dll files. If you want to use it, please download it and unzip it in the project address.  
+Baidu Pan: [https://pan.baidu.com/s/1HUdhR0nRi1cRLXRbRMN2FQ](https://pan.baidu.com/s/1HUdhR0nRi1cRLXRbRMN2FQ), the code is "hubi"  
+Google Drive: Ungoing... 
+
+### Be careful:
+Surf cuda in Opencv is good at feature search and not good at feature match. It will raise error if the graphic memory is insuffient.
+
 ## Examples
 There are some examples of VFSMS are shown behind.
 
@@ -17,9 +25,22 @@ Six types’ local and global micrographs and their shooting path. The red trans
 
 
 ## Citation
-If you use it successfully for your research please be so kind to cite our work:
+If you use it successfully for your research please be so kind to cite [our work](https://www.sciencedirect.com/science/article/pii/S0927025618307158):
 
 Ma B, Ban X, Huang H, et al. A fast algorithm for material image sequential stitching[J]. Computational Materials Science, 2019, 158: 1-13.
 
-## Acknowledgements
+or
+```C
+@article{MA20191,
+title = "A fast algorithm for material image sequential stitching",
+journal = "Computational Materials Science",
+volume = "158",
+pages = "1 - 13",
+year = "2019",
+issn = "0927-0256",
+doi = "https://doi.org/10.1016/j.commatsci.2018.10.044",
+url = "http://www.sciencedirect.com/science/article/pii/S0927025618307158",
+author = "Boyuan Ma and Xiaojuan Ban and Haiyou Huang and Wanbo Liu and Chuni Liu and Di Wu and Yonghong Zhi"}
+```
+## Acknowledgement
 The authors acknowledge the financial support from the National Key Research and Development Program of China (No. 2016YFB0700500)
