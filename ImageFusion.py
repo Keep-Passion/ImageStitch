@@ -57,6 +57,7 @@ class ImageFusion(Utility.Method):
         compareList.append(np.count_nonzero(imageA[0: row // 2, col // 2: col] > 0))
         # self.printAndWrite("    compareList:" + str(compareList))
         index = compareList.index(min(compareList))
+        # print("index:", index)
         if index == 2:
             # 重合区域在imageA的上左部分
             # self.printAndWrite("上左")
@@ -176,11 +177,16 @@ class ImageFusion(Utility.Method):
         :return:融合后的图像
         '''
         (imageA, imageB) = images
+        # cv2.imshow("A", imageA.astype(np.uint8))
+        # cv2.imshow("B", imageB.astype(np.uint8))
+        # cv2.waitKey(0)
+        # self.printAndWrite("dx={}, dy={}".format(dx, dy))
         row, col = imageA.shape[:2]
         weightMatA = np.ones(imageA.shape, dtype=np.float32)
         weightMatB = np.ones(imageA.shape, dtype=np.float32)
         # self.printAndWrite("    ratio: "  + str(np.count_nonzero(imageA > -1) / imageA.size))
         if np.count_nonzero(imageA > -1) / imageA.size > 0.65:
+            # self.printAndWrite("直接融合")
             # 如果对于imageA中，非0值占比例比较大，则认为是普通融合
             # 根据区域的行列大小来判断，如果行数大于列数，是水平方向
             if col <= row:
@@ -207,7 +213,7 @@ class ImageFusion(Utility.Method):
             # 如果对于imageA中，非0值占比例比较小，则认为是拐角融合
             # self.printAndWrite("拐角融合")
             weightMatA, weightMatB = self.getWeightsMatrix(images)
-        imageA[imageA == -1] = 0;   imageB[imageB == -1] =0;
+        imageA[imageA < 0] = imageB[imageA < 0]
         result = weightMatA * imageA.astype(np.int) + weightMatB * imageB.astype(np.int)
         result[result < 0] = 0;     result[result > 255] = 255
         fuseRegion = np.uint8(result)
@@ -256,7 +262,7 @@ class ImageFusion(Utility.Method):
         weightMatA = np.power(np.sin(weightMatA * math.pi / 2), 2)
         weightMatB = 1 - weightMatA
 
-        imageA[imageA == -1] = 0;   imageB[imageB == -1] =0;
+        imageA[imageA < 0] = imageB[imageA < 0]
         result = weightMatA * imageA.astype(np.int) + weightMatB * imageB.astype(np.int)
         result[result < 0] = 0;     result[result > 255] = 255
         fuseRegion = np.uint8(result)

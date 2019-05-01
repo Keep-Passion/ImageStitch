@@ -414,6 +414,7 @@ class Stitcher(Utility.Method):
                 rangeY[i][1] = resultCol
             imageList.append(tempImage)
         stitchResult = np.zeros((resultRow, resultCol), np.int) - 1
+        # stitchResult = np.zeros((resultRow, resultCol), np.int)
         self.printAndWrite("  The rectified offsetList is " + str(offsetList))
         # 如上算出各个图像相对于原点偏移量，并最终计算出输出图像大小，并构造矩阵，如下开始赋值
         for i in range(0, len(offsetList)):
@@ -459,51 +460,32 @@ class Stitcher(Utility.Method):
         :return:
         """
         (imageA, imageB) = images
-        # cv2.namedWindow("A", 0)
-        # cv2.namedWindow("B", 0)
-        # cv2.imshow("A", imageA.astype(np.uint8))
-        # cv2.imshow("B", imageB.astype(np.uint8))
-        fuseRegion = np.zeros(imageA.shape, np.uint8)
-        # imageA[imageA == 0] = imageB[imageA == 0]
-        # imageB[imageB == 0] = imageA[imageB == 0]
+        if self.fuseMethod != "fadeInAndFadeOut" and self.fuseMethod != "trigonometric":
+            # 将各自区域中为背景的部分用另一区域填充，目的是消除背景
+            # 权值为-1是为了方便渐入检出融合和三角融合计算
+            imageA[imageA == -1] = 0
+            imageB[imageB == -1] = 0
+            imageA[imageA == 0] = imageB[imageA == 0]
+            imageB[imageB == 0] = imageA[imageB == 0]
         imageFusion = ImageFusion.ImageFusion()
+        fuseRegion = np.zeros(imageA.shape, np.uint8)
         if self.fuseMethod == "notFuse":
-            imageB[imageA == -1] = imageB[imageA == -1]
-            imageA[imageB == -1] = imageA[imageB == -1]
             fuseRegion = imageB
         elif self.fuseMethod == "average":
-            imageA[imageA == 0] = imageB[imageA == 0]
-            imageB[imageB == 0] = imageA[imageB == 0]
-            imageA[imageA == -1] = 0
-            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByAverage([imageA, imageB])
         elif self.fuseMethod == "maximum":
-            imageA[imageA == 0] = imageB[imageA == 0]
-            imageB[imageB == 0] = imageA[imageB == 0]
-            imageA[imageA == -1] = 0
-            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByMaximum([imageA, imageB])
         elif self.fuseMethod == "minimum":
-            imageA[imageA == 0] = imageB[imageA == 0]
-            imageB[imageB == 0] = imageA[imageB == 0]
-            imageA[imageA == -1] = 0
-            imageB[imageB == -1] = 0
             fuseRegion = imageFusion.fuseByMinimum([imageA, imageB])
         elif self.fuseMethod == "fadeInAndFadeOut":
             fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images, dx, dy)
         elif self.fuseMethod == "trigonometric":
             fuseRegion = imageFusion.fuseByTrigonometric(images, dx, dy)
         elif self.fuseMethod == "multiBandBlending":
-            imageA[imageA == 0] = imageB[imageA == 0]
-            imageB[imageB == 0] = imageA[imageB == 0]
-            imageA[imageA == -1] = 0
-            imageB[imageB == -1] = 0
-            # imageA = imageA.astye(np.uint8);  imageB = imageB.astye(np.uint8);
             fuseRegion = imageFusion.fuseByMultiBandBlending([imageA, imageB])
         elif self.fuseMethod == "optimalSeamLine":
             fuseRegion = imageFusion.fuseByOptimalSeamLine(images, self.direction)
         return fuseRegion
-
 
 if __name__=="__main__":
     stitcher = Stitcher()
