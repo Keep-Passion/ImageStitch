@@ -5,7 +5,9 @@ In material researches, it is often highly desirable to observe images of whole 
 Python 3 need to be installed before running this scripts.
 To run this algorithm, you need to install the python packages as follows:
 
-    opencv-contrib(we have tested oepncv3.3.1)
+    opencv-contrib(we have tested oepncv3.3.1 and python 3.6)
+
+As we have tested, python 3.7 could only support for opencv 4.0 which have totally no sift or cuda-sift in conteib package. We recommend to use python 3.6.
 
 ## GPU Version in windows
 We rebuild the opencv-contrib 3.3.1 and cuda9.0 in our code and provide these dll files. If you want to use it, please download it and unzip it in the project address.  
