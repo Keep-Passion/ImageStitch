@@ -10,9 +10,7 @@ To run this algorithm, you need to install the python packages as follows:
 As we have tested, python 3.7 could only support for opencv 4.0 which have totally no sift or cuda-sift in conteib package. We recommend to use python 3.6.
 
 ## GPU Version in windows
-We rebuild the opencv-contrib 3.3.1 and cuda9.0 in our code and provide these dll files. If you want to use it, please download it and unzip it in the project address.  
-Baidu Pan: [https://pan.baidu.com/s/1HUdhR0nRi1cRLXRbRMN2FQ](https://pan.baidu.com/s/1HUdhR0nRi1cRLXRbRMN2FQ), the code is "hubi"  
-Google Drive: Ungoing... 
+We rebuild the opencv-contrib 3.3.1 and cuda9.0 in our code and provide these dll files. If you want to use it, please unrar it in the project address. 
 
 ### Be careful:
 Surf cuda in Opencv is good at feature search and not good at feature match. It will raise error if the graphic memory is insuffient.
