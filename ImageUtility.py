@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import math
 from myGpuFeatures import myGpuFeatures
-from scipy.stats import mode
+# from scipy.stats import mode
 
 class Method():
     # 关于打印信息的设置

@@ -1,11 +1,11 @@
 ﻿import numpy as np
 import cv2
-from scipy.stats import mode
+# from scipy.stats import mode
 import time
 import os
 import glob
-import skimage.measure
-from numba import jit
+# import skimage.measure
+# from numba import jit
 import ImageUtility as Utility
 import ImageFusion
 import time
