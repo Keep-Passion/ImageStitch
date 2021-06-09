@@ -5,6 +5,9 @@ import ImageUtility as Utility
 
 
 class ImageFusion(Utility.Method):
+
+    isColorMode = False
+
     # 图像融合类，目前只编写传统方法
     def fuseByAverage(self, images):
         '''
@@ -36,7 +39,7 @@ class ImageFusion(Utility.Method):
         (imageA, imageB) = images
         fuseRegion = np.minimum(imageA, imageB)
         return fuseRegion
-    
+
     def getWeightsMatrix(self, images):
         '''
         功能：获取权值矩阵
@@ -61,16 +64,21 @@ class ImageFusion(Utility.Method):
         if index == 2:
             # 重合区域在imageA的上左部分
             # self.printAndWrite("上左")
-            rowIndex = 0;   colIndex = 0;
+            rowIndex = 0;
+            colIndex = 0;
             for j in range(1, col):
                 for i in range(row - 1, -1, -1):
-                    if imageA[i, col - j] != -1:
+                    # tempSum = imageA[i, col - j].sum()
+                    if (self.isColorMode and imageA[i, col - j].sum() != -3) or (self.isColorMode is False and imageA[i, col - j] != -1):
+                    # if imageA[i, col - j] != -1:
                         rowIndex = i + 1
                         break
                 if rowIndex != 0:
                     break
             for i in range(col - 1, -1, -1):
-                if imageA[rowIndex, i] != -1:
+                # tempSum = imageA[rowIndex, i].sum()
+                if (self.isColorMode and imageA[rowIndex, i].sum() != -3) or (self.isColorMode is False and imageA[rowIndex, i] != -1):
+                # if imageA[rowIndex, i] != -1:
                     colIndex = i + 1
                     break
             # 赋值
@@ -84,20 +92,25 @@ class ImageFusion(Utility.Method):
                 weightMatB_2[:, colIndex - i] = (colIndex - i) * 1 / colIndex
             weightMatB = weightMatB_1 * weightMatB_2
             weightMatA = 1 - weightMatB
-        #elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
+        # elif leftCenter != 0 and bottomCenter != 0 and upCenter == 0 and rightCenter == 0:
         elif index == 3:
             # 重合区域在imageA的下左部分
             # self.printAndWrite("下左")
-            rowIndex = 0;       colIndex = 0;
+            rowIndex = 0;
+            colIndex = 0;
             for j in range(1, col):
                 for i in range(row):
-                    if imageA[i, col - j] != -1:
+                    # tempSum = imageA[i, col - j].sum()
+                    if (self.isColorMode and imageA[i, col - j].sum() != -3) or (self.isColorMode is False and imageA[i, col - j] != -1):
+                    # if imageA[i, col - j] != -1:
                         rowIndex = i - 1
                         break
                 if rowIndex != 0:
                     break
             for i in range(col - 1, -1, -1):
-                if imageA[rowIndex, i] != -1:
+                # tempSum = imageA[rowIndex, i].sum()
+                if (self.isColorMode and imageA[rowIndex, i].sum() != -3) or (self.isColorMode is False and imageA[rowIndex, i] != -1):
+                # if imageA[rowIndex, i] != -1:
                     colIndex = i + 1
                     break
             # 赋值
@@ -119,13 +132,17 @@ class ImageFusion(Utility.Method):
             colIndex = 0;
             for j in range(0, col):
                 for i in range(row):
-                    if imageA[i, j] != -1:
+                    # tempSum = imageA[i, j].sum()
+                    if (self.isColorMode and imageA[i, j].sum() != -3) or (self.isColorMode is False and imageA[i, j] != -1):
+                    # if imageA[i, j] != -1:
                         rowIndex = i - 1
                         break
                 if rowIndex != 0:
                     break
             for i in range(col):
-                if imageA[rowIndex, i] != -1:
+                # tempSum = imageA[rowIndex, i].sum()
+                if (self.isColorMode and imageA[rowIndex, i].sum() != -3) or (self.isColorMode is False and imageA[rowIndex, i] != -1):
+                # if imageA[rowIndex, i] != -1:
                     colIndex = i - 1
                     break
             # 赋值
@@ -143,16 +160,19 @@ class ImageFusion(Utility.Method):
         elif index == 1:
             # 重合区域在imageA的上右部分
             # self.printAndWrite("上右")
-            rowIndex = 0;   colIndex = 0;
+            rowIndex = 0;
+            colIndex = 0;
             for j in range(0, col):
                 for i in range(row - 1, -1, -1):
-                    if imageA[i, j] != -1:
+                    # tempSum = imageA[i, j].sum()
+                    if (self.isColorMode and imageA[i, j].sum() != -3) or ((self.isColorMode is False) and imageA[i, j] != -1):
                         rowIndex = i + 1
                         break
                 if rowIndex != 0:
                     break
             for i in range(col):
-                if imageA[rowIndex, i] != -1:
+                # tempSum = imageA[rowIndex, i].sum()
+                if (self.isColorMode and imageA[rowIndex, i].sum() != -3) or ((self.isColorMode is False) and imageA[rowIndex, i] != -1):
                     colIndex = i - 1
                     break
             for i in range(rowIndex + 1):
@@ -176,6 +196,7 @@ class ImageFusion(Utility.Method):
         :param direction: 横向拼接还是纵向拼接
         :return:融合后的图像
         '''
+        # print("dx=", dx, "dy=", dy)
         (imageA, imageB) = images
         # cv2.imshow("A", imageA.astype(np.uint8))
         # cv2.imshow("B", imageB.astype(np.uint8))
@@ -192,13 +213,16 @@ class ImageFusion(Utility.Method):
             if col <= row:
                 # self.printAndWrite("普通融合-水平方向")
                 for i in range(0, col):
-                    # print(dy)
                     if dy >= 0:
-                        weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
-                        weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * i * 1.0 / col
+                        weightMatA[:, col - i - 1] = weightMatA[:, col - i - 1] * i * 1.0 / col
+                        weightMatB[:, i] = weightMatB[:, i] * i * 1.0 / col
+                        # weightMatA[:, i] = weightMatA[:, i] * i * 1.0 / col
+                        # weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * i * 1.0 / col
                     elif dy < 0:
-                        weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
-                        weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
+                        weightMatA[:, col - i - 1] = weightMatA[:, col - i - 1] * (col - i) * 1.0 / col
+                        weightMatB[:, i] = weightMatB[:, i] * (col - i) * 1.0 / col
+                        # weightMatA[:, i] = weightMatA[:, i] * (col - i) * 1.0 / col
+                        # weightMatB[:, col - i - 1] = weightMatB[:, col - i - 1] * (col - i) * 1.0 / col
             # 根据区域的行列大小来判断，如果列数大于行数，是竖直方向
             elif row < col:
                 # self.printAndWrite("普通融合-竖直方向")

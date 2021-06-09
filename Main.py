@@ -3,12 +3,13 @@ from Stitcher import Stitcher
 
 def stitchWithFeature():
     Stitcher.featureMethod = "surf"             # "sift","surf" or "orb"
+    Stitcher.isColorMode = True                 # True:color, False: gray
     Stitcher.isGPUAvailable = True
     Stitcher.searchRatio = 0.75                 # 0.75 is common value for matches
-    Stitcher.offsetCaculate = "mode"              # "mode" or "ransac"
-    Stitcher.offsetEvaluate = 3                   # 3 menas nums of matches for mode, 3.0 menas  of matches for ransac
-    Stitcher.roiRatio = 0.2                       # roi length for stitching in first direction
-    Stitcher.fuseMethod = "fadeInAndFadeOut"              # "notFuse","average","maximum","minimum","fadeInAndFadeOut","trigonometric", "multiBandBlending"
+    Stitcher.offsetCaculate = "mode"            # "mode" or "ransac"
+    Stitcher.offsetEvaluate = 3                 # 3 menas nums of matches for mode, 3.0 menas  of matches for ransac
+    Stitcher.roiRatio = 0.2                     # roi length for stitching in first direction
+    Stitcher.fuseMethod = "fadeInAndFadeOut"    # "notFuse","average","maximum","minimum","fadeInAndFadeOut","trigonometric", "multiBandBlending"
     stitcher = Stitcher()
 
     Stitcher.direction = 1;  Stitcher.directIncre = 0;
@@ -46,7 +47,6 @@ def stitchWithFeature():
     outputAddress = "result\\zirconTEM" + str.capitalize(Stitcher.fuseMethod) + "\\"
     stitcher.imageSetStitchWithMutiple(projectAddress, outputAddress, 1, stitcher.calculateOffsetForFeatureSearch,
                             startNum=1, fileExtension="jpg", outputfileExtension="jpg")
-
 
 if __name__=="__main__":
     stitchWithFeature()

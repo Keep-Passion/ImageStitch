@@ -4,6 +4,7 @@ import cv2
 import time
 import os
 import glob
+import copy
 # import skimage.measure
 # from numba import jit
 import ImageUtility as Utility
@@ -21,12 +22,16 @@ class Stitcher(Utility.Method):
     '''
 	    图像拼接类，包括所有跟材料显微组织图像配准相关函数
 	'''
+    isColorMode = True
     direction = 1               # 1： 第一张图像在上，第二张图像在下；   2： 第一张图像在左，第二张图像在右；
                                 # 3： 第一张图像在下，第二张图像在上；   4： 第一张图像在右，第二张图像在左；
     directIncre = 1             # 拼接增长方向，可以为1. 0， -1
     fuseMethod = "notFuse"
     phaseResponseThreshold = 0.15
     tempImageFeature = ImageFeature()
+
+    imageFusion = ImageFusion.ImageFusion()
+
 
     def directionIncrease(self, direction):
         """
@@ -113,7 +118,10 @@ class Stitcher(Utility.Method):
                 break
             if startNum == (totalNum - 1):
                 # result.append(cv2.imread(fileList[startNum], 0))
-                result.append(cv2.imdecode(np.fromfile(fileList[startNum], dtype=np.uint8), cv2.IMREAD_GRAYSCALE))
+                if self.isColorMode:
+                    result.append(cv2.imdecode(np.fromfile(fileList[startNum], dtype=np.uint8), cv2.IMREAD_COLOR))
+                else:
+                    result.append(cv2.imdecode(np.fromfile(fileList[startNum], dtype=np.uint8), cv2.IMREAD_GRAYSCALE))
                 break
             self.printAndWrite("stitching Break, start from " + str(fileList[startNum]) + " again")
         return result
@@ -357,11 +365,11 @@ class Stitcher(Utility.Method):
             self.printAndWrite("  The offset of stitching: dx is " + str(offset[0]) + " dy is " + str(offset[1]))
             return (status, offset)
 
-    def getStitchByOffset(self, fileList, offsetListOrigin):
+    def getStitchByOffset(self, fileList, originOffsetList):
         '''
         功能：通过偏移量列表和文件列表得到最终的拼接结果
         :param fileList: 图像列表
-        :param offsetListOrigin: 偏移量列表
+        :param originOffsetList: 偏移量列表
         :return: ndarry，图像
         '''
         # 如果你不细心，不要碰这段代码
@@ -369,14 +377,18 @@ class Stitcher(Utility.Method):
         dxSum = dySum = 0
         imageList = []
         # imageList.append(cv2.imread(fileList[0], 0))
-        imageList.append(cv2.imdecode(np.fromfile(fileList[0], dtype=np.uint8), cv2.IMREAD_GRAYSCALE))
+        if self.isColorMode:
+            imageList.append(cv2.imdecode(np.fromfile(fileList[0], dtype=np.uint8), cv2.IMREAD_COLOR))
+        else:
+            imageList.append(cv2.imdecode(np.fromfile(fileList[0], dtype=np.uint8), cv2.IMREAD_GRAYSCALE))
         resultRow = imageList[0].shape[0]         # 拼接最终结果的横轴长度,先赋值第一个图像的横轴
         resultCol = imageList[0].shape[1]         # 拼接最终结果的纵轴长度,先赋值第一个图像的纵轴
-        offsetListOrigin.insert(0, [0, 0])        # 增加第一张图像相对于最终结果的原点的偏移量
+        originOffsetList.insert(0, [0, 0])        # 增加第一张图像相对于最终结果的原点的偏移量
 
-        rangeX = [[0,0] for x in range(len(offsetListOrigin))]  # 主要用于记录X方向最大最小边界
-        rangeY = [[0, 0] for x in range(len(offsetListOrigin))] # 主要用于记录Y方向最大最小边界
-        offsetList = offsetListOrigin.copy()
+        rangeX = [[0,0] for x in range(len(originOffsetList))]  # 主要用于记录X方向最大最小边界
+        rangeY = [[0, 0] for x in range(len(originOffsetList))] # 主要用于记录Y方向最大最小边界
+        # print("originOffsetList=",originOffsetList)
+        offsetList = copy.deepcopy(originOffsetList)
         rangeX[0][1] = imageList[0].shape[0]
         rangeY[0][1] = imageList[0].shape[1]
 
@@ -384,7 +396,10 @@ class Stitcher(Utility.Method):
             # self.printAndWrite("  stitching " + str(fileList[i]))
             # 适用于流形拼接的校正,并更新最终图像大小
             # tempImage = cv2.imread(fileList[i], 0)
-            tempImage = cv2.imdecode(np.fromfile(fileList[i], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+            if Stitcher.isColorMode:
+                tempImage = cv2.imdecode(np.fromfile(fileList[i], dtype=np.uint8), cv2.IMREAD_COLOR)
+            else:
+                tempImage = cv2.imdecode(np.fromfile(fileList[i], dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
             dxSum = dxSum + offsetList[i][0]
             dySum = dySum + offsetList[i][1]
             # self.printAndWrite("  The dxSum is " + str(dxSum) + " and the dySum is " + str(dySum))
@@ -413,19 +428,29 @@ class Stitcher(Utility.Method):
                 resultCol = max(resultCol, dySum + tempImage.shape[1])
                 rangeY[i][1] = resultCol
             imageList.append(tempImage)
-        stitchResult = np.zeros((resultRow, resultCol), np.int) - 1
+        stitchResult = None
+        if self.isColorMode:
+            stitchResult = np.zeros((resultRow, resultCol, 3), np.int) - 1
+        else:
+            stitchResult = np.zeros((resultRow, resultCol), np.int) - 1
         # stitchResult = np.zeros((resultRow, resultCol), np.int)
         self.printAndWrite("  The rectified offsetList is " + str(offsetList))
         # 如上算出各个图像相对于原点偏移量，并最终计算出输出图像大小，并构造矩阵，如下开始赋值
         for i in range(0, len(offsetList)):
             self.printAndWrite("  stitching " + str(fileList[i]))
             if i == 0:
-                stitchResult[offsetList[0][0]: offsetList[0][0] + imageList[0].shape[0], offsetList[0][1]: offsetList[0][1] + imageList[0].shape[1]] = imageList[0]
+                if self.isColorMode:
+                    stitchResult[offsetList[0][0]: offsetList[0][0] + imageList[0].shape[0], offsetList[0][1]: offsetList[0][1] + imageList[0].shape[1], :] = imageList[0]
+                else:
+                    stitchResult[offsetList[0][0]: offsetList[0][0] + imageList[0].shape[0], offsetList[0][1]: offsetList[0][1] + imageList[0].shape[1]] = imageList[0]
             else:
                 if self.fuseMethod == "notFuse":
                     # 适用于无图像融合，直接覆盖
                     # self.printAndWrite("Stitch " + str(i+1) + "th, the roi_ltx is " + str(offsetList[i][0]) + " and the roi_lty is " + str(offsetList[i][1]))
-                    stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
+                    if self.isColorMode:
+                        stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1], :] = imageList[i]
+                    else:
+                        stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
                 else:
                     # 适用于图像融合算法，切出 roiA 和 roiB 供图像融合
                     minOccupyX = rangeX[i-1][0]
@@ -444,10 +469,18 @@ class Stitcher(Utility.Method):
                     # self.printAndWrite("Stitch " + str(i + 1) + "th, the roi_ltx is " + str(
                     #     roi_ltx) + " and the roi_lty is " + str(roi_lty) + " and the roi_rbx is " + str(
                     #     roi_rbx) + " and the roi_rby is " + str(roi_rby))
-                    roiImageRegionA = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
-                    stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
-                    roiImageRegionB = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
-                    stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby] = self.fuseImage([roiImageRegionA, roiImageRegionB], offsetListOrigin[i][0], offsetListOrigin[i][1])
+
+                    if self.isColorMode:
+                        roiImageRegionA = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby, :].copy()
+                        stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1], :] = imageList[i]
+                        roiImageRegionB = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby, :].copy()
+                        stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby, :] = self.fuseImage([roiImageRegionA, roiImageRegionB], originOffsetList[i][0], originOffsetList[i][1])
+                    else:
+                        roiImageRegionA = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
+                        stitchResult[offsetList[i][0]: offsetList[i][0] + imageList[i].shape[0], offsetList[i][1]: offsetList[i][1] + imageList[i].shape[1]] = imageList[i]
+                        roiImageRegionB = stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby].copy()
+                        stitchResult[roi_ltx:roi_rbx, roi_lty:roi_rby] = self.fuseImage([roiImageRegionA, roiImageRegionB], originOffsetList[i][0], originOffsetList[i][1])
+        # print("originOffsetList=", originOffsetList)
         stitchResult[stitchResult == -1] = 0
         return stitchResult.astype(np.uint8)
 
@@ -459,6 +492,7 @@ class Stitcher(Utility.Method):
         :param dy: y方向偏移量
         :return:
         """
+        self.imageFusion.isColorMode = self.isColorMode
         (imageA, imageB) = images
         if self.fuseMethod != "fadeInAndFadeOut" and self.fuseMethod != "trigonometric":
             # 将各自区域中为背景的部分用另一区域填充，目的是消除背景
@@ -467,24 +501,26 @@ class Stitcher(Utility.Method):
             imageB[imageB == -1] = 0
             imageA[imageA == 0] = imageB[imageA == 0]
             imageB[imageB == 0] = imageA[imageB == 0]
-        imageFusion = ImageFusion.ImageFusion()
+
         fuseRegion = np.zeros(imageA.shape, np.uint8)
         if self.fuseMethod == "notFuse":
             fuseRegion = imageB
         elif self.fuseMethod == "average":
-            fuseRegion = imageFusion.fuseByAverage([imageA, imageB])
+            fuseRegion = self.imageFusion.fuseByAverage([imageA, imageB])
         elif self.fuseMethod == "maximum":
-            fuseRegion = imageFusion.fuseByMaximum([imageA, imageB])
+            fuseRegion = self.imageFusion.fuseByMaximum([imageA, imageB])
         elif self.fuseMethod == "minimum":
-            fuseRegion = imageFusion.fuseByMinimum([imageA, imageB])
+            fuseRegion = self.imageFusion.fuseByMinimum([imageA, imageB])
         elif self.fuseMethod == "fadeInAndFadeOut":
-            fuseRegion = imageFusion.fuseByFadeInAndFadeOut(images, dx, dy)
+            fuseRegion = self.imageFusion.fuseByFadeInAndFadeOut(images, dx, dy)
         elif self.fuseMethod == "trigonometric":
-            fuseRegion = imageFusion.fuseByTrigonometric(images, dx, dy)
+            fuseRegion = self.imageFusion.fuseByTrigonometric(images, dx, dy)
         elif self.fuseMethod == "multiBandBlending":
-            fuseRegion = imageFusion.fuseByMultiBandBlending([imageA, imageB])
+            assert self.isColorMode is False, "The multi Band Blending is not support for color mode in this code"
+            fuseRegion = self.imageFusion.fuseByMultiBandBlending([imageA, imageB])
         elif self.fuseMethod == "optimalSeamLine":
-            fuseRegion = imageFusion.fuseByOptimalSeamLine(images, self.direction)
+            assert self.isColorMode is False, "The optimal seam line is not support for color mode in this code"
+            fuseRegion = self.imageFusion.fuseByOptimalSeamLine(images, self.direction)
         return fuseRegion
 
 if __name__=="__main__":

@@ -6,4 +6,5 @@ result/
 __pycache__/
 .pyc
 myGpuFeatures/
+demoImages/test/
 myGpuFeatures.zip
