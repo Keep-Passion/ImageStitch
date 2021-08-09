@@ -156,7 +156,7 @@ python-jsonrpc-server @ file:///tmp/build/80754af9/python-jsonrpc-server_1594397
 python-language-server @ file:///C:/ci/python-language-server_1594159702692/work
 pytz==2020.1
 PyWavelets==1.1.1
-pywin32==227
+pywin32==301
 pywin32-ctypes==0.2.0
 pywinpty==0.5.7
 PyYAML==5.3.1
