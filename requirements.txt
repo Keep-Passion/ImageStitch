@@ -110,7 +110,7 @@ numexpr==2.7.1
 numpy==1.19.5
 numpydoc @ file:///tmp/build/80754af9/numpydoc_1594166760263/work
 olefile==0.46
-opencv-contrib-python==3.3.1.11
+opencv-contrib-python==3.4.7.28
 opencv-python==3.3.1.11
 openpyxl @ file:///tmp/build/80754af9/openpyxl_1594167385094/work
 packaging==20.4
