@@ -4,7 +4,9 @@ from Stitcher import Stitcher
 def stitchWithFeature():
     Stitcher.featureMethod = "surf"             # "sift","surf" or "orb"
     Stitcher.isColorMode = True                 # True:color, False: gray
-    Stitcher.isGPUAvailable = True
+    Stitcher.isGPUAvailable = False
+    # Stitcher.isEnhance = True
+    # Stitcher.isClahe = True
     Stitcher.searchRatio = 0.75                 # 0.75 is common value for matches
     Stitcher.offsetCaculate = "mode"            # "mode" or "ransac"
     Stitcher.offsetEvaluate = 3                 # 3 menas nums of matches for mode, 3.0 menas  of matches for ransac

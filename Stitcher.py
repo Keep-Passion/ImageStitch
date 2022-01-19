@@ -337,6 +337,7 @@ class Stitcher(Utility.Method):
                 kpsB, featuresB = self.detectAndDescribe(roiImageB, featureMethod=self.featureMethod)
                 if featuresA is not None and featuresB is not None:
                     matches = self.matchDescriptors(featuresA, featuresB)
+                    # self.printAndWrite("  The number of raw matches is " + str(len(matches)))
                     # match all the feature points
                     if self.offsetCaculate == "mode":
                         (status, offset) = self.getOffsetByMode(kpsA, kpsB, matches, offsetEvaluate = self.offsetEvaluate)
