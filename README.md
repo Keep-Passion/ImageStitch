@@ -2,7 +2,7 @@
 In material researches, it is often highly desirable to observe images of whole microscopic sections with high resolution. So that micrograph stitching is an important technology to produce a panorama or larger image by combining multiple images with overlapping areas, while retaining microscopic resolution. However, due to high complexity and variety of microstructure, most traditional methods could not balance the speed and accuracy of stitching strategy. To overcome this problem, we develop a very fast sequential micrograph stitching method, called VFSMS, which employ incremental searching strategy and GPU acceleration to guarantee the accuracy and speed of the stitching results. Experimental results demonstrate that VFSMS achieve state-of-art performance on six types' microscopic datasets on both accuracy and speed aspects. Besides, it significantly outperform the most famous and commonly used software, such as ImageJ, Photoshop and Autostitch.
 
 ## Note
-This repository contains unstable GPU acceleration and will not provide support from now on. And a new version of software, equipped with stable GPU acceleration, multi-process acceleration and more advanced stitching algorithm, can be downloaded and installed at [the website](http://microstitch.ustb-ai3d.cn/).
+This repository contains unstable GPU acceleration and will not provide support from now on. And a new version of software, equipped with stable GPU acceleration, multi-process acceleration and more advanced stitching algorithm, can be downloaded and installed at [the website](http://microstitch.tech/).
 
 ## Requirements
 Python 3 need to be installed before running this scripts.
